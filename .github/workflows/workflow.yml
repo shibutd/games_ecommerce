@@ -1,8 +1,6 @@
 name: Games ecommerce
 
-on:
-  push:
-    branches: [ master ]
+on: push
 
 jobs:
   build:
@@ -13,13 +11,14 @@ jobs:
 
     - name: Set up Python 3.7
       uses: actions/setup-python@v1
-        with:
-          python-version: 3.7
+      with:
+        python-version: 3.7
 
     - name: Install dependencies
       run: |
-        pip install Django==3.0.*
+        pip install pipenv==2018.11.26
+        pipenv install --system
 
     - name: Run the tests
       run: |
-        python runtests.py
+        python manage.py test
