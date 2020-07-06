@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.urls import reverse
 
 
 class CustomUserManager(BaseUserManager):
@@ -92,6 +93,8 @@ class Product(models.Model):
     description = models.TextField(blank=True)
     price = models.DecimalField(
         max_digits=6, decimal_places=2)
+    discount_price = models.DecimalField(
+        max_digits=6, decimal_places=2, blank=True, null=True)
     slug = models.SlugField(max_length=48)
     active = models.BooleanField(default=True)
     in_stock = models.BooleanField(default=True)
@@ -103,10 +106,18 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
+    def get_absolute_url(self):
+        """
+        get "product" from name in urls
+        """
+        return reverse('games:product', kwargs={
+            'slug': self.slug
+        })
+
 
 class ProductImage(models.Model):
     product = models.ForeignKey(
-        Product, on_delete=models.CASCADE)
+        Product, related_name='images', on_delete=models.CASCADE)
     image = models.ImageField(upload_to="product-images")
     thumbnail = models.ImageField(
         upload_to="product-thumbnails", null=True)

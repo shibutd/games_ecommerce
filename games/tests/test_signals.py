@@ -17,7 +17,7 @@ class TestSignal(TestCase):
         )
         product.save()
 
-        image_file = 'games/fixtures/product-sampleimages/Call_of_Duty_MW2.png'
+        image_file = 'games/fixtures/product-sampleimages/Call_of_Duty_MW2.jpg'
 
         # Create ProductImage instance
         with open(image_file, 'rb') as f:
@@ -37,7 +37,7 @@ class TestSignal(TestCase):
         # Ensure saved thumbnail is thumbnail of ProductImage
         storage_path = os.path.join(tempfile.gettempdir(),
                                     'product-thumbnails',
-                                    'codc.jpg')
+                                    'cdmw.jpg')
         with open(storage_path, "rb") as f:
             expected_content = f.read()
             assert image.thumbnail.read() == expected_content

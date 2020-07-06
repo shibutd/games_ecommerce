@@ -1,12 +1,25 @@
 from django.contrib import messages
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse, reverse_lazy
-from django.views.generic import TemplateView, View, FormView
-from . import forms
+from django.views.generic import ListView, DetailView, View, FormView
+from . import forms, models
 
 
-class HomePageView(TemplateView):
-    template_name = 'home.html'
+class HomePageView(ListView):
+    model = models.Product
+    template_name = "home.html"
+    paginate_by = 3
+    context_object_name = 'products'
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.order_by('name')
+
+
+class ProductDetailView(DetailView):
+    model = models.Product
+    template_name = 'product_detail.html'
+    context_object_name = 'product'
 
 
 class ContactUsView(FormView):
