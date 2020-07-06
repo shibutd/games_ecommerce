@@ -17,7 +17,7 @@ class TestSignal(TestCase):
         )
         product.save()
 
-        image_file = 'games/fixtures/product-sampleimages/Call_of_Duty.png'
+        image_file = 'games/fixtures/product-sampleimages/Call_of_Duty_MW2.png'
 
         # Create ProductImage instance
         with open(image_file, 'rb') as f:

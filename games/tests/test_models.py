@@ -7,7 +7,7 @@ class TestModel(TestCase):
 
     def test_active_manager_works(self):
         models.Product.objects.create(
-            name="Call of Duty",
+            name="Call_of_Duty Modern Warfare 2",
             price=Decimal("10.00"),
         )
         models.Product.objects.create(
