@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
+    'crispy_forms',
 
     'games.apps.GamesConfig',
 ]
@@ -61,7 +62,7 @@ ROOT_URLCONF = 'games_ecommerce.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'games', 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -90,10 +91,12 @@ WSGI_APPLICATION = 'games_ecommerce.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'postgres',
+        # 'NAME': 'postgres',
+        'NAME': 'games_ecommerce',
+
         'USER': 'postgres',
-        'PASSWORD': 'postgres',
-        'HOST': 'db',
+        'PASSWORD': 'aMhKuJqhbzLrRe93ypCB',
+        'HOST': '127.0.0.1',
         'PORT': 5432
     }
 }
@@ -177,6 +180,6 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 
-# # CRISPY_FORMS
+# CRISPY_FORMS
 
-# CRISPY_TEMPLATE_PACK = 'bootstrap4'
+CRISPY_TEMPLATE_PACK = 'bootstrap4'

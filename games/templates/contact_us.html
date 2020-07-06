@@ -1,0 +1,26 @@
+{% extends "_base.html" %}
+{% load crispy_forms_tags %}
+
+{% block head_title %}Contact us{% endblock %}
+
+{% block content %}
+<main>
+  <div class="container">
+    <section class="mt-4 mb-5">
+      <div class="row wow fadeIn">
+        <div class="col-12">
+          <div class="table-responsive text-nowrap">
+            <h1>Contact us</h1>
+
+            <form method="POST">
+              {% csrf_token %}
+              {{ form|crispy }}
+              <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+{% endblock content %}

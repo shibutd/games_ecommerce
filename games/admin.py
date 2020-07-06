@@ -1,5 +1,55 @@
 from django.contrib import admin
-from .models import CustomUser
+from django.utils.html import format_html
+from . import models
 
 
-admin.site.register(CustomUser)
+class CustomerUserAdmin(admin.ModelAdmin):
+    list_display = ('email', 'is_staff', 'is_superuser')
+    list_filter = ('is_staff', 'is_superuser')
+    search_fields = ('email',)
+
+
+class ProductAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug', 'in_stock', 'price')
+    list_filter = ('active', 'in_stock', 'date_updated')
+    list_editable = ('in_stock',)
+    search_fields = ('name',)
+    prepopulated_fields = {"slug": ("name",)}
+    autocomplete_fields = ('tags',)
+
+
+class ProductTagAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug')
+    list_filter = ('active',)
+    search_fields = ('name',)
+    prepopulated_fields = {"slug": ("name",)}
+    autocomplete_fields = ('product',)
+
+
+class ProductImageAdmin(admin.ModelAdmin):
+    list_display = ('thumbnail_tag', 'product_name')
+    readonly_fields = ('thumbnail',)
+    search_fields = ('product__name',)
+
+    def thumbnail_tag(self, obj):
+        """
+        Return HTML for the first column defined
+        in the list_display property above
+        """
+        if obj.thumbnail:
+            return format_html(
+                '<img src="%s"/>' % obj.thumbnail.url)
+        return "-"
+
+    # Defines the column name for the list_display
+    thumbnail_tag.short_description = "Thumbnail"
+
+    def product_name(self, obj):
+        return obj.product.name
+
+
+admin.site.register(models.CustomUser, CustomerUserAdmin)
+
+admin.site.register(models.Product, ProductAdmin)
+admin.site.register(models.ProductTag, ProductTagAdmin)
+admin.site.register(models.ProductImage, ProductImageAdmin)
