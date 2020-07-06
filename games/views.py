@@ -1,6 +1,6 @@
 from django.contrib import messages
 from django.shortcuts import render, redirect
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.views.generic import TemplateView, View, FormView
 from . import forms
 
@@ -12,7 +12,7 @@ class HomePageView(TemplateView):
 class ContactUsView(FormView):
     template_name = 'contact_us.html'
     form_class = forms.ContactUsForm
-    success_url = '/'
+    success_url = reverse_lazy('games:home')
 
     def form_valid(self, form):
         form.send_mail()
