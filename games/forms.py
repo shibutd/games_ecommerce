@@ -1,9 +1,19 @@
 import logging
 from django import forms
 from django.core.mail import send_mail
+from django.forms import inlineformset_factory
+from . import models
 
 
 logger = logging.getLogger(__name__)
+
+
+CartLineFormSet = inlineformset_factory(
+    models.Cart,
+    models.CartLine,
+    fields=("quantity",),
+    extra=0,
+)
 
 
 class ContactUsForm(forms.Form):

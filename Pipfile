@@ -9,8 +9,11 @@ django-allauth = "*"
 psycopg2 = "*"
 django-crispy-forms = "*"
 pillow = "*"
+django-countries = "*"
 
 [dev-packages]
+django-extensions = "*"
+factory-boy = "*"
 
 [requires]
 python_version = "3.7"

@@ -1,12 +1,39 @@
 from django.contrib import admin
+from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils.html import format_html
 from . import models
 
 
-class CustomerUserAdmin(admin.ModelAdmin):
-    list_display = ('email', 'is_staff', 'is_superuser')
-    list_filter = ('is_staff', 'is_superuser')
-    search_fields = ('email',)
+class CustomerUserAdmin(DjangoUserAdmin):
+    """
+    Define admin model for custom User model with no username field.
+    """
+    fieldsets = (
+        (None, {"fields": ("email", "password")}),
+        ("Personal info", {
+            "fields": ("first_name", "last_name")
+        }),
+        ("Permissions", {
+            "fields": (
+                "is_active",
+                "is_staff",
+                "is_superuser",
+                "groups",
+                "user_permissions",
+            )
+        }),
+        ("Important dates", {
+            "fields": ("last_login", "date_joined")
+        }),
+    )
+    add_fieldsets = (
+        (None, {
+            "fields": ("email", "password1", "password2"),
+        }),
+    )
+    list_display = ("email", "first_name", "last_name", "is_staff")
+    search_fields = ("email", "first_name", "last_name")
+    ordering = ("email",)
 
 
 class ProductAdmin(admin.ModelAdmin):
@@ -34,11 +61,11 @@ class ProductImageAdmin(admin.ModelAdmin):
     def thumbnail_tag(self, obj):
         """
         Return HTML for the first column defined
-        in the list_display property above
+        in 'list_display'.
         """
         if obj.thumbnail:
             return format_html(
-                '<img src="%s"/>' % obj.thumbnail.url)
+                '<img src={}/>'.format(obj.thumbnail.url))
         return "-"
 
     # Defines the column name for the list_display

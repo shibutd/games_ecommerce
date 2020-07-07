@@ -42,12 +42,18 @@
         
         {% if request.user.is_authenticated %}
 
+          <li class="nav-item p-2">
+            <span class="badge red z-depth-1 mr-2"> {{ request.user }} </span>
+          </li>
+
           <li class="nav-item">
             <a href="{% url "account_logout" %}" class="nav-link waves-effect">Sign out</a>
           </li>
+
+
+
           <li class="nav-item">
             <a href="{% url 'games:order-summary' %}" class="nav-link waves-effect">
-              <span class="badge red z-depth-1 mr-2"> {{ request.user }} </span>
               <i class="fas fa-shopping-cart"></i>
               <span class="clearfix d-none d-sm-inline-block"> Cart </span>
             </a>
@@ -58,6 +64,7 @@
           <li class="nav-item">
             <a href="{% url "account_login" %}" class="nav-link waves-effect">Log in</a>
           </li>
+
           <li class="nav-item">
             <a href="{% url "account_signup" %}" class="nav-link waves-effect">Sign up</a>
           </li>

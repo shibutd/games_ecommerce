@@ -39,10 +39,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',
 
+    'django_extensions',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'crispy_forms',
+    'django_countries',
 
     'games.apps.GamesConfig',
 ]
@@ -55,6 +57,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'games.middlewares.cart_middleware',
 ]
 
 ROOT_URLCONF = 'games_ecommerce.urls'
@@ -183,3 +186,8 @@ AUTHENTICATION_BACKENDS = [
 # CRISPY_FORMS
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
+
+
+# DJANGO COUNTRIES
+
+COUNTRIES_ONLY = ['NZ', 'AU']

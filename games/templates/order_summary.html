@@ -1,4 +1,4 @@
-{% extends "base1.html" %}
+{% extends "_base.html" %}
 
 {% block head_title %}Order Summary{% endblock %}
 
@@ -23,30 +23,30 @@
               </thead>
 
               <tbody>
-                {% for order_item in object.items.all %}
+                {% for cart_line in cart.lines.all %}
                 <tr>
                   <th scope="row">{{ forloop.counter }}</th>
-                  <td>{{ order_item.item.title }}</td>
+                  <td>{{ cart_line.product.name }}</td>
                   <td>
-                    {% if order_item.item.discount_price %}
-                      <del>$ {{ order_item.item.price }}</del>
-                      $ {{ order_item.item.discount_price }}
+                    {% if cart_line.product.discount_price %}
+                      <del>$ {{ cart_line.product.price }}</del>
+                      $ {{ cart_line.product.discount_price }}
                     {% else %}
-                      $ {{ order_item.item.price }}
+                      $ {{ cart_line.product.price }}
                     {% endif %}
                   </td>
                   <td>
-                    <a href={% url 'main:remove-single-from-cart' order_item.item.slug %}><i class="fas fa-minus pr-2"></i></a>
-                    {{ order_item.quantity }}
-                    <a href={% url 'main:add-to-cart' order_item.item.slug %}><i class="fas fa-plus pl-2"></i></a>
+                    <a href={% url 'games:remove-single-from-cart' cart_line.product.slug %}><i class="fas fa-minus pr-2"></i></a>
+                    {{ cart_line.quantity }}
+                    <a href={% url 'games:add-to-cart' cart_line.product.slug %}><i class="fas fa-plus pl-2"></i></a>
                   </td>
                   <td>
-                    $ {{ order_item.get_total_item_price }}
-                    {% if order_item.item.discount_price %}
+                    $ {{ cart_line.get_total_product_price }}
+                    {% if cart_line.product.discount_price %}
                       <span class="badge badge-danger ml-2">SALE</span>
                     {% endif %}
 
-                    <a href={% url 'main:remove-from-cart' order_item.item.slug %}><i class="fas fa-trash float-right"></i></a>
+                    <a href={% url 'games:remove-from-cart' cart_line.product.slug %}><i class="fas fa-trash float-right"></i></a>
                     
                   </td>
                 </tr>
@@ -57,30 +57,31 @@
                 </tr>
                 <tr>
                   <td colspan="5">
-                    <a href="{% url 'main:home' %}" class="btn btn-primary float-right">Continue shopping</a>
+                    <a href="{% url 'games:home' %}" class="btn btn-primary float-right">Continue shopping</a>
                   </td>
                 </tr>
 
                 {% endfor %}
 
-                {% if object.get_total %}
-                  {% if object.coupon %}
+                {% if cart.get_total %}
+                  <!--{# {% if object.coupon %}
                   <tr class="text-success">
                     <td colspan="2"><h6><b>Coupon:</b></h6></td> 
                     <td colspan="2"><h6><b>{{ object.coupon.code }}</b></h6></td> 
                     <td><h6><b>-$ {{ object.coupon.amount }}</b></h6></td>
                   </tr>
-                  {% endif %}
+                  {% endif %} #}-->
 
                 <tr>
                   <td colspan="4"><h4><b>Total price:</b></h4></td> 
-                  <td><h4><b>$ {{ object.get_total }}</b></h4></td>
+                  <td><h4><b>$ {{ cart.get_total }}</b></h4></td>
                 </tr>
 
                 <tr>
                   <td colspan="5">
-                    <a href="{% url 'main:checkout' %}" class="btn btn-success float-right ml-2">Proceed to payment</a>
-                    <a href="{% url 'main:home' %}" class="btn btn-primary float-right">Continue shopping</a>
+                    <a href="{% url 'games:home' %}" class="btn btn-success float-right ml-2">Proceed to payment</a>
+
+                    <a href="{% url 'games:home' %}" class="btn btn-primary float-right">Continue shopping</a>
                   </td>
                 </tr>
                 {% endif %}

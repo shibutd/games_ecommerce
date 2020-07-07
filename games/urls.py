@@ -21,4 +21,17 @@ urlpatterns = [
          views.OrderSummaryView.as_view(),
          name='order-summary'),
 
+    path('basket/', views.manage_basket, name="basket"),
+
+    path('add_to_cart/<slug>',
+         views.add_to_cart,
+         name='add-to-cart'),
+
+    path('remove_single_from_cart/<slug>',
+         views.remove_single_from_cart,
+         name='remove-single-from-cart'),
+
+    path('remove_from_cart/<slug>',
+         views.remove_from_cart,
+         name='remove-from-cart'),
 ]
