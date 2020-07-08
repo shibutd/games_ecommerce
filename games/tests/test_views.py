@@ -1,6 +1,11 @@
 from django.test import TestCase
 from django.urls import reverse, resolve
 from .. import views, models, forms, factories
+from django.contrib import auth
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class TestViews(TestCase):
@@ -50,6 +55,67 @@ class TestViews(TestCase):
             list(product_list),
         )
 
+    def test_add_to_cart_loggedin_works(self):
+        user1 = factories.UserFactory()
+        product1, product2 = factories.ProductFactory.create_batch(2)
+
+        self.client.force_login(user1)
+
+        self.client.get(product1.get_add_to_cart_url())
+        self.client.get(product1.get_add_to_cart_url())
+
+        self.assertTrue(
+            models.Cart.objects.filter(user=user1).exists())
+        self.assertEquals(
+            models.CartLine.objects.filter(
+                cart__user=user1).count(), 1)
+
+        self.client.get(
+            reverse("games:add-to-cart", kwargs={"slug": product2.slug}))
+
+        self.assertEquals(
+            models.CartLine.objects.filter(
+                cart__user=user1).count(), 2)
+
+    def test_add_to_cart_login_merge_works(self):
+        user1 = factories.UserFactory()
+        product1, product2 = factories.ProductFactory.create_batch(2)
+
+        # create cart of user1, add 2 cb
+        cart = models.Cart.objects.create(user=user1)
+        models.CartLine.objects.create(
+            cart=cart, product=product1, quantity=2
+        )
+
+        # anon user with empty cart tries get to order-summary
+        response = self.client.get(
+            reverse("games:order-summary"))
+        self.assertRedirects(response, reverse("games:home"))
+
+        # anon user adds items to his Cart
+        response = self.client.get(product2.get_add_to_cart_url())
+
+        self.assertEquals(models.Cart.objects.count(), 2)
+        self.assertEquals(
+            models.Cart.objects.filter(
+                user=user1).count(), 1)
+
+        # anon user with not empty cart tries get to order-summary
+        response = self.client.get(
+            reverse("games:order-summary"))
+        self.assertTemplateUsed(response, 'order_summary.html')
+
+        self.client.force_login(user1)
+        self.assertTrue(
+            auth.get_user(self.client).is_authenticated)
+
+        # cart of user and cart created while he was anon merged
+        self.assertEquals(models.Cart.objects.count(), 1)
+
+        response = self.client.get(product2.get_add_to_cart_url())
+
+        self.assertEquals(models.Cart.objects.count(), 1)
+
     # def test_products_page_filters_by_tags_and_active(self):
     #     factories.ProductFactory(active=True)
     #     factories.ProductFactory(active=False)
@@ -81,26 +147,3 @@ class TestViews(TestCase):
         #     list(response.context["object_list"]),
         #     list(product_list),
         # )
-
-    def test_add_to_cart_loggedin_works(self):
-        user1 = factories.UserFactory()
-        product1, product2 = factories.ProductFactory.create_batch(2)
-
-        self.client.force_login(user1)
-        self.client.get(
-            reverse("games:add-to-cart", kwargs={"slug": product1.slug}))
-        self.client.get(
-            reverse("games:add-to-cart", kwargs={"slug": product1.slug}))
-
-        self.assertTrue(
-            models.Cart.objects.filter(user=user1).exists())
-        self.assertEquals(
-            models.CartLine.objects.filter(
-                cart__user=user1).count(), 1)
-
-        self.client.get(
-            reverse("games:add-to-cart", kwargs={"slug": product2.slug}))
-
-        self.assertEquals(
-            models.CartLine.objects.filter(
-                cart__user=user1).count(), 2)

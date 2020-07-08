@@ -1,5 +1,4 @@
 from django.conf import settings
-from django.utils.text import slugify
 import factory
 import factory.fuzzy
 from . import models

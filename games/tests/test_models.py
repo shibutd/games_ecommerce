@@ -7,6 +7,7 @@ class TestModel(TestCase):
     def test_active_manager_works(self):
         factories.ProductFactory.create_batch(2, active=True)
         factories.ProductFactory(active=False)
+        self.assertEqual(len(models.Product.objects.all()), 3)
         self.assertEqual(len(models.Product.objects.active()), 2)
 
     # def test_create_order_works(self):

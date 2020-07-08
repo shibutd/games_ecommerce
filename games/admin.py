@@ -45,12 +45,19 @@ class ProductAdmin(admin.ModelAdmin):
     autocomplete_fields = ('tags',)
 
 
+class ProductInline(admin.TabularInline):
+    model = models.ProductTag.product_set.through
+
+
 class ProductTagAdmin(admin.ModelAdmin):
     list_display = ('name', 'slug')
     list_filter = ('active',)
     search_fields = ('name',)
     prepopulated_fields = {"slug": ("name",)}
     autocomplete_fields = ('product',)
+    inlines = [
+        ProductInline,
+    ]
 
 
 class ProductImageAdmin(admin.ModelAdmin):
