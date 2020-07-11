@@ -1,7 +1,8 @@
 import logging
 from django import forms
 from django.core.mail import send_mail
-from django.forms import inlineformset_factory
+from django.forms import inlineformset_factory, formset_factory
+from django_countries.widgets import CountrySelectWidget
 from . import models
 
 
@@ -37,3 +38,54 @@ class ContactUsForm(forms.Form):
             ["customerservice@games4everyone.com"],
             fail_silently=False,
         )
+
+
+class AddressForm(forms.ModelForm):
+    use_default = forms.BooleanField(initial=False, required=False)
+
+    class Meta:
+        model = models.Address
+        exclude = ['user', 'address_type']
+        # fields = [
+        #     'user',
+        #     'street_address',
+        #     'apartment_address',
+        #     'zip_code',
+        #     'city',
+        #     'country',
+        #     'address_type',
+        #     'is_default'
+        # ]
+        labels = {
+            'street_address': 'Address',
+            'apartment_address': 'Address 2 (optional)',
+            'is_default': 'Save as default',
+        }
+        widgets = {
+            'street_address': forms.TextInput(
+                attrs={'placeholder': '1234 Main St'}),
+            'apartment_address': forms.TextInput(
+                attrs={'placeholder': 'Apartment or Suite'}),
+            'country': CountrySelectWidget(),
+            'address_type': forms.HiddenInput(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            self.fields[field].required = False
+        self.fields['use_default'].label = 'Use my default address:'
+
+    def validate_input(self, values):
+        for field in values:
+            if field == '':
+                return False
+        return True
+
+
+# AddressFormSet = formset_factory(
+#     AddressForm,
+#     extra=2,
+#     max_num=2,
+#     min_num=1,
+# )

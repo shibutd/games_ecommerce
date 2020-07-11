@@ -11,12 +11,12 @@ def cart_middleware(get_response):
         if 'cart_id' in request.session:
             cart_id = request.session['cart_id']
 
-            logger.warning('==== Cart_id in session: %d ====', cart_id)
+            # logger.warning('==== Cart_id in session: %d ====', cart_id)
 
             cart = models.Cart.objects.get(id=cart_id)
             request.cart = cart
         else:
-            logger.warning('==== Cart_id not in session ====')
+            # logger.warning('==== Cart_id not in session ====')
 
             request.cart = None
 

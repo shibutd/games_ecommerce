@@ -23,10 +23,17 @@ class ProductFactory(factory.django.DjangoModelFactory):
     price = factory.fuzzy.FuzzyDecimal(10.0, 100.0, 2)
 
 
-# class AddressFactory(factory.django.DjangoModelFactory):
+class AddressFactory(factory.django.DjangoModelFactory):
 
-#     class Meta:
-#         model = models.Address
+    class Meta:
+        model = models.Address
+
+    street_address = factory.Faker('address')
+    zip_code = factory.Faker('zip')
+    city = factory.Faker('city')
+    country = 'US'
+    address_type = 10
+    is_default = False
 
 
 # class OrderLineFactory(factory.django.DjangoModelFactory):

@@ -11,7 +11,8 @@ class CustomUserManager(BaseUserManager):
 
     def _create_user(self, email, password, **extra_fields):
         """
-        Create and save a CustomUser with the given email and password.
+        Create and save a CustomUser instance with the given email and
+        password.
         """
         if not email:
             raise ValueError("Users must have an email address")
@@ -102,7 +103,7 @@ class Product(models.Model):
     active = models.BooleanField(default=True)
     in_stock = models.BooleanField(default=True)
     date_updated = models.DateTimeField(auto_now=True)
-    tags = models.ManyToManyField(ProductTag, blank=True)
+    tags = models.ManyToManyField('ProductTag', blank=True)
 
     objects = ActiveManager()
 
@@ -127,33 +128,51 @@ class Product(models.Model):
 
 class ProductImage(models.Model):
     product = models.ForeignKey(
-        Product, related_name='images', on_delete=models.CASCADE)
+        'Product', related_name='images', on_delete=models.CASCADE)
     image = models.ImageField(upload_to="product-images")
     thumbnail = models.ImageField(
         upload_to="product-thumbnails", null=True)
 
 
 class Address(models.Model):
-    ADDRESS_CHOICES = (('S', 'Shipping'), ('B', 'Billing'))
+    SHIPPING = 10
+    BILLING = 20
+    ADDRESS_CHOICES = ((SHIPPING, 'Shipping'), (BILLING, 'Billing'))
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
                              on_delete=models.CASCADE)
-    name = models.CharField(max_length=60)
     street_address = models.CharField(max_length=60)
     apartment_address = models.CharField(
         max_length=60, blank=True)
     zip_code = models.CharField(max_length=12)
     city = models.CharField(max_length=60)
-    country = CountryField(multiple=False)
-    address_type = models.CharField(
-        choices=ADDRESS_CHOICES, max_length=1)
-    default = models.BooleanField(default=False)
-
-    def __str__(self):
-        return self.user.email
+    country = CountryField(
+        multiple=False, blank_label='Choose...')
+    address_type = models.IntegerField(
+        choices=ADDRESS_CHOICES)
+    is_default = models.BooleanField(default=False)
 
     class Meta:
         verbose_name_plural = 'Addresses'
+
+    def __str__(self):
+        return '{0}, {1}, {2}, {3}, {4}. {5}, {6}, {7}'.format(
+            self.user.email,
+            self.street_address,
+            self.apartment_address,
+            self.zip_code,
+            self.city,
+            self.country,
+            self.address_type,
+            self.is_default
+        )
+
+    def save(self, *args, **kwargs):
+        if self.is_default:
+            Address.objects.filter(user=self.user,
+                                   address_type=self.address_type,
+                                   is_default=True).update(is_default=False)
+        super(Address, self).save(*args, **kwargs)
 
 
 class Cart(models.Model):
@@ -177,59 +196,48 @@ class Cart(models.Model):
             total += cart_line.get_total_product_price()
         return total
 
-    # def create_order(self, billing_address, shipping_address):
-    #     if not self.user:
-    #         raise exceptions.BasketException(
-    #             "Cannot create order without user")
-    #     logger.info(
-    #         "Creating order for basket_id=%d"
-    #         ", shipping_address_id=%d, billing_address_id=%d",
-    #         self.id,
-    #         shipping_address.id,
-    #         billing_address.id,
-    #     )
+    def create_order(self, billing_address, shipping_address):
+        if not self.user:
+            reverse('account_login')
+        #     raise exceptions.BasketException(
+        #         "Cannot create order without user")
+        # logger.info(
+        #     "Creating order for basket_id=%d"
+        #     ", shipping_address_id=%d, billing_address_id=%d",
+        #     self.id,
+        #     shipping_address.id,
+        #     billing_address.id,
+        # )
 
-    #     order_data = {
-    #         "user": self.user,
-    #         "billing_name": billing_address.name,
-    #         "billing_address1": billing_address.address1,
-    #         "billing_address2": billing_address.address2,
-    #         "billing_zip_code": billing_address.zip_code,
-    #         "billing_city": billing_address.city,
-    #         "billing_country": billing_address.country,
-    #         "shipping_name": shipping_address.name,
-    #         "shipping_address1": shipping_address.address1,
-    #         "shipping_address2": shipping_address.address2,
-    #         "shipping_zip_code": shipping_address.zip_code,
-    #         "shipping_city": shipping_address.city,
-    #         "shipping_country": shipping_address.country,
-    #     }
+        order_data = {
+            'user': self.user,
+            'billing_address': billing_address,
+            'shipping_address': shipping_address,
+        }
 
-    #     order = Order.objects.create(**order_data)
-    #     c = 0
-    #     for line in self.basketline_set.all():
-    #         for item in range(line.quantity):
-    #             order_line_data = {
-    #                 "order": order,
-    #                 "product": line.product,
-    #             }
-    #             OrderLine.objects.create(**order_line_data)
-    #             c += 1
-    #     logger.info(
-    #         "Created order with id=%d and lines_count=%d",
-    #         order.id,
-    #         c,
-    #     )
-    #     self.status = Basket.SUBMITTED
-    #     self.save()
-    #     return order
+        order = Order.objects.create(**order_data)
+        for line in self.lines.all():
+            order_line_data = {
+                'order': order,
+                'product': line.product,
+                'quantity': line.quantity,
+            }
+            OrderLine.objects.create(**order_line_data)
+        # logger.info(
+        #     "Created order with id=%d and lines_count=%d",
+        #     order.id,
+        #     c,
+        # )
+        self.status = Cart.SUBMITTED
+        self.save()
+        return order
 
 
 class CartLine(models.Model):
     cart = models.ForeignKey(
-        Cart, related_name='lines', on_delete=models.CASCADE)
+        'Cart', related_name='lines', on_delete=models.CASCADE)
     product = models.ForeignKey(
-        Product, on_delete=models.CASCADE)
+        'Product', on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(
         default=1, validators=[MinValueValidator(1)])
 
@@ -240,50 +248,46 @@ class CartLine(models.Model):
             price = self.product.price
         return price * self.quantity
 
-# class Order(models.Model):
-#     NEW = 10
-#     PAID = 20
-#     DONE = 30
-#     STATUSES = ((NEW, "New"), (PAID, "Paid"), (DONE, "Done"))
 
-#     user = models.ForeignKey(settings.AUTH_USER_MODEL,
-#                              on_delete=models.CASCADE)
-#     status = models.IntegerField(choices=STATUSES, default=NEW)
+class Order(models.Model):
+    NEW = 10
+    PAID = 20
+    DONE = 30
+    STATUSES = ((NEW, "New"), (PAID, "Paid"), (DONE, "Done"))
 
-#     billing_name = models.CharField(max_length=60)
-#     billing_address1 = models.CharField(max_length=60)
-#     billing_address2 = models.CharField(
-#         max_length=60, blank=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                             on_delete=models.CASCADE)
+    status = models.IntegerField(choices=STATUSES, default=NEW)
 
-#     billing_zip_code = models.CharField(max_length=12)
-#     billing_city = models.CharField(max_length=60)
-#     billing_country = models.CharField(max_length=3)
-
-#     shipping_name = models.CharField(max_length=60)
-#     shipping_address1 = models.CharField(max_length=60)
-#     shipping_address2 = models.CharField(
-#         max_length=60, blank=True)
-#     shipping_zip_code = models.CharField(max_length=12)
-#     shipping_city = models.CharField(max_length=60)
-#     shipping_country = models.CharField(max_length=3)
-
-#     date_updated = models.DateTimeField(auto_now=True)
-#     date_added = models.DateTimeField(auto_now_add=True)
+    billing_address = models.ForeignKey(
+        'Address',
+        related_name='billing_address',
+        on_delete=models.PROTECT, blank=True, null=True
+    )
+    shipping_address = models.ForeignKey(
+        'Address',
+        related_name='shipping_address',
+        on_delete=models.PROTECT, blank=True, null=True
+    )
+    date_updated = models.DateTimeField(auto_now=True)
+    date_added = models.DateTimeField(auto_now_add=True)
 
 
-# class OrderLine(models.Model):
-#     NEW = 10
-#     PROCESSING = 20
-#     SENT = 30
-#     CANCELLED = 40
-#     STATUSES = (
-#         (NEW, "New"),
-#         (PROCESSING, "Processing"),
-#         (SENT, "Sent"),
-#         (CANCELLED, "Cancelled"),
-#     )
-#     order = models.ForeignKey(
-#         Order, on_delete=models.CASCADE, related_name="lines")
-#     product = models.ForeignKey(
-#         Product, on_delete=models.PROTECT)
-#     status = models.IntegerField(choices=STATUSES, default=NEW)
+class OrderLine(models.Model):
+    PROCESSING = 10
+    SENT = 20
+    RECEIVED = 30
+    CANCELLED = 40
+    STATUSES = (
+        (PROCESSING, "Processing"),
+        (SENT, "Sent"),
+        (RECEIVED, "Received"),
+        (CANCELLED, "Cancelled"),
+    )
+    order = models.ForeignKey(
+        'Order', on_delete=models.CASCADE, related_name="lines")
+    product = models.ForeignKey(
+        'Product', on_delete=models.PROTECT)
+    quantity = models.PositiveIntegerField(
+        default=1, validators=[MinValueValidator(1)])
+    status = models.IntegerField(choices=STATUSES, default=PROCESSING)

@@ -80,27 +80,22 @@ class TestViews(TestCase):
     def test_add_to_cart_login_merge_works(self):
         user1 = factories.UserFactory()
         product1, product2 = factories.ProductFactory.create_batch(2)
-
         # create cart of user1, add 2 cb
         cart = models.Cart.objects.create(user=user1)
         models.CartLine.objects.create(
-            cart=cart, product=product1, quantity=2
-        )
-
-        # anon user with empty cart tries get to order-summary
+            cart=cart, product=product1, quantity=2)
+        # anonymous user with empty cart tries get to order-summary
         response = self.client.get(
             reverse("games:order-summary"))
         self.assertRedirects(response, reverse("games:home"))
-
-        # anon user adds items to his Cart
+        # anonymous user adds items to his Cart
         response = self.client.get(product2.get_add_to_cart_url())
 
         self.assertEquals(models.Cart.objects.count(), 2)
         self.assertEquals(
             models.Cart.objects.filter(
                 user=user1).count(), 1)
-
-        # anon user with not empty cart tries get to order-summary
+        # anonymous user with not empty cart tries get to order-summary
         response = self.client.get(
             reverse("games:order-summary"))
         self.assertTemplateUsed(response, 'order_summary.html')
@@ -108,13 +103,90 @@ class TestViews(TestCase):
         self.client.force_login(user1)
         self.assertTrue(
             auth.get_user(self.client).is_authenticated)
-
-        # cart of user and cart created while he was anon merged
+        # cart of user and anonymous cart merged
         self.assertEquals(models.Cart.objects.count(), 1)
 
         response = self.client.get(product2.get_add_to_cart_url())
 
         self.assertEquals(models.Cart.objects.count(), 1)
+
+    def test_user_can_save_shipping_and_billing_addresses(self):
+        user = factories.UserFactory()
+
+        shipping_data = {
+            'shipping-street_address': '1234 Main St',
+            'shipping-apartment_address': '22',
+            'shipping-zip_code': '25121251',
+            'shipping-city': 'San Diego',
+            'shipping-country': 'US',
+            'shipping-is_default': False,
+            'shipping-use_default': False,
+        }
+        billing_data = {
+            'billing-street_address': '1234 Main St',
+            'billing-apartment_address': '22',
+            'billing-zip_code': '25121251',
+            'billing-city': 'San Diego',
+            'billing-country': 'US',
+            'billing-is_default': True,
+            'billing-use_default': False,
+        }
+        form_data = {**shipping_data, **billing_data}
+
+        self.client.force_login(user)
+
+        response = self.client.post(reverse('games:checkout'), form_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("games:home"))
+
+        self.assertEquals(len(models.Address.objects.filter(user=user)), 2)
+        self.assertEquals(len(models.Address.objects.filter(
+            user=user).filter(is_default=True)), 1)
+
+        # test_if_user_can_have_only_one_unique_default_address_at_once
+        models.Address.objects.filter(user=user).update(is_default=True)
+        self.assertEquals(len(models.Address.objects.filter(
+            user=user).filter(is_default=True)), 2)
+
+        form_data['shipping-is_default'] = True
+        form_data['billing-is_default'] = True
+        response = self.client.post(reverse('games:checkout'), form_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("games:home"))
+
+        self.assertEquals(len(models.Address.objects.filter(
+            user=user).filter(is_default=True)), 2)
+
+        # test_user_can_use_default_address
+        shipping_data = {
+            'shipping-street_address': '',
+            'shipping-apartment_address': '',
+            'shipping-zip_code': '',
+            'shipping-city': '',
+            'shipping-country': '',
+            'shipping-is_default': False,
+            'shipping-use_default': True,
+        }
+        billing_data = {
+            'billing-street_address': '',
+            'billing-apartment_address': '',
+            'billing-zip_code': '',
+            'billing-city': '',
+            'billing-country': '',
+            'billing-is_default': False,
+            'billing-use_default': True,
+        }
+        form_data = {**shipping_data, **billing_data}
+
+        response = self.client.post(reverse('games:checkout'), form_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("games:home"))
+
+        # test_user_cant_use_not_existing_default_address
+        models.Address.objects.filter(user=user, address_type=10).delete()
+        response = self.client.post(reverse('games:checkout'), form_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("games:checkout"))
 
     # def test_products_page_filters_by_tags_and_active(self):
     #     factories.ProductFactory(active=True)
