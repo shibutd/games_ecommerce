@@ -1,4 +1,4 @@
-{# {% load cart_template_tags %} #}
+{% load cart_template_tags %}
 
 <!-- Navbar -->
 <nav class="navbar fixed-top navbar-expand-lg navbar-light white scrolling-navbar">
@@ -42,15 +42,18 @@
         
         {% if request.user.is_authenticated %}
 
-          <li class="nav-item p-2">
-            <span class="badge red z-depth-1 mr-2"> {{ request.user }} </span>
-          </li>
+          <div class="dropdown">
 
-          <li class="nav-item">
-            <a href="{% url "account_logout" %}" class="nav-link waves-effect">Sign out</a>
-          </li>
+            <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown"
+              aria-haspopup="true" aria-expanded="false">{{ request.user }}</button>
+
+            <div class="dropdown-menu dropdown-primary">
+              <a class="dropdown-item" href="{% url 'account_logout' %}">Sign out</a>
+            </div>
+          </div>
 
         {% else %}
+
 
           <li class="nav-item">
             <a href="{% url "account_login" %}" class="nav-link waves-effect">Log in</a>
@@ -64,6 +67,9 @@
 
           <li class="nav-item">
             <a href="{% url 'games:order-summary' %}" class="nav-link waves-effect">
+              {% if request|cart_item_count %}
+              <span class="badge red z-depth-1 mr-1"> {{ request|cart_item_count }} </span>
+              {% endif %}
               <i class="fas fa-shopping-cart"></i>
               <span class="clearfix d-none d-sm-inline-block"> Cart </span>
             </a>

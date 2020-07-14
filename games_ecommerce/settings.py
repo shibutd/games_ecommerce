@@ -15,7 +15,6 @@ import os
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
@@ -155,6 +154,8 @@ STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
 ]
 
+MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
+
 
 # EMAIL
 
@@ -164,6 +165,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # DJANGO-ALLAUTH
 
 AUTH_USER_MODEL = "games.CustomUser"
+
+ACCOUNT_LOGOUT_ON_GET = True
 
 SITE_ID = 1
 

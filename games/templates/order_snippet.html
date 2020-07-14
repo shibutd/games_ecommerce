@@ -1,64 +1,60 @@
+{% load crispy_forms_tags %}
+
 <!--Grid column-->
 <div class="col-md-12 mt-4 mb-4">
 
+{% with request.cart as cart %}
+      
   <!-- Heading -->
   <h4 class="d-flex justify-content-between align-items-center mb-3">
     <span class="text-muted">Your cart</span>
-    <span class="badge badge-secondary badge-pill">{{ order.items.count }}</span>
+    <span class="badge badge-secondary badge-pill">{{ cart.lines.count }}</span>
   </h4>
     
   <!-- Cart -->
   <ul class="list-group mb-3 z-depth-1">
 
-    {% for order_item in order.items.all %}
+    {% for cart_line in cart.lines.all %}
 
-    <li class="list-group-item d-flex justify-content-between lh-condensed">
-      <div>
-        <h6 class="my-0">{{ order_item.quantity }} x {{ order_item.item.title }}</h6>
-        <small class="text-muted">{{ order_item.item.description }}</small>
-      </div>
-      <span class="text-muted">${{ order_item.get_total_item_price }}</span>
-    </li>
+      <li class="list-group-item d-flex justify-content-between lh-condensed">
+        <div>
+          <h6 class="my-0">{{ cart_line.quantity }} x {{ cart_line.product.name }}</h6>
+        </div>
+        <span class="text-muted">${{ cart_line.get_total_product_price }}</span>
+      </li>
 
     {% endfor %}
 
-    {% if order.coupon %}
+    {% if cart.coupon %}
       
     <li class="list-group-item d-flex justify-content-between bg-light">
       <div class="text-success">
         <h6 class="my-0">Promo code</h6>
-        <small>{{ order.coupon.code }}</small>
+        <small>{{ cart.coupon.code }}</small>
       </div>
-      <span class="text-success">-${{ order.coupon.amount }}</span>
+      <span class="text-success">-${{ cart.coupon.amount }}</span>
     </li>  
 
     {% endif %}
 
     <li class="list-group-item d-flex justify-content-between">
-      <span>Total (USD)</span>
-      <strong>${{ order.get_total }}</strong>
+      <strong><span>Total</span></strong>
+      <strong>${{ cart.get_total }}</strong>
     </li>
 
   </ul>
   <!-- Cart -->
+{% endwith %}
 
-  {% if DISPLAY_COUPON_FORM %}
-    
+{% if DISPLAY_COUPON_FORM %}
   <!-- Promo code -->
-  <form class="card p-2" action="{% url "main:add-coupon" %}" method="POST">
-    {% csrf_token %}
-    <div class="input-group">
-      <!--<input type="text" class="form-control" placeholder="Promo code" aria-label="Recipient's username" aria-describedby="basic-addon2">-->
-      {{ couponform.code }}
-      <div class="input-group-append">
-        <button class="btn btn-secondary btn-md waves-effect m-0" type="submit">Redeem</button>
-      </div>
-    </div>
-  </form>
+    <form class="card p-2" action="{% url "games:add-coupon" %}" method="POST">
+      {% csrf_token %}
+        {{ couponform.code|as_crispy_field }}
+        <button class="btn btn-secondary btn-md waves-effect m-0" type="submit">Activate</button>
+    </form>
   <!-- Promo code -->
-
-  {% endif %}
-
+{% endif %}
 
 </div>
 <!--Grid column-->

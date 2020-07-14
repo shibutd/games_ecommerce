@@ -1,12 +1,12 @@
-from io import BytesIO
 import logging
+from io import BytesIO
 from PIL import Image
 from django.core.files.base import ContentFile
 from django.db.models.signals import pre_save
 from django.contrib.auth.signals import user_logged_in
-# from allauth.account.signals import user_logged_in
 from django.dispatch import receiver
 from . import models
+
 
 THUMBNAIL_SIZE = (300, 300)
 
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 @receiver(pre_save, sender=models.ProductImage)
 def generate_thumbnail(sender, instance, **kwargs):
     """
-    Signal to generate thumbnail before saving ProductImage.
+    Generate thumbnail before saving ProductImage.
     """
     logger.warning("Generating thumbnail for product %d",
                    instance.product.pk)
@@ -40,37 +40,44 @@ def generate_thumbnail(sender, instance, **kwargs):
 @receiver(user_logged_in)
 def merge_carts_if_found(sender, user, request, **kwargs):
     """
-    Signal to check if User has a primary Cart, then put
-    items that he added into Cart while he was unauthenticated
-    into his primary Cart.
+    Check if User had a Cart. Put into primary Cart items
+    that was added into Cart while he was unauthenticated.
     """
-    # anonymous_cart = getattr(request, "cart", None)
     anonymous_cart_id = request.session.get('cart_id')
 
-    if anonymous_cart_id:
-        logger.warning("Find anonymous cart with id")
-    else:
-        logger.warning("Cant find cart")
+    # if anonymous_cart_id:
+    #     logger.warning("Find anonymous cart with id")
+    # else:
+    #     logger.warning("Cant find cart")
 
     if anonymous_cart_id:
+        anonymous_cart = models.Cart.objects.get(pk=anonymous_cart_id)
         try:
-            anonymous_cart = models.Cart.objects.get(pk=anonymous_cart_id)
-
-            # Check if User already put products to his Cart
-            # when he was logged in last time
+            # Check if User already has a Cart
             loggedin_cart = models.Cart.objects.get(
                 user=user, status=models.Cart.OPEN)
 
             # If yes, put every product_line into his Cart
-            for line in anonymous_cart.lines.all():
-                line.cart = loggedin_cart
-                line.save()
+            loggedin_cart_products = loggedin_cart.get_all_products()
+
+            for line in anonymous_cart.lines.select_related('product'):
+
+                product_name = line.product.name
+
+                if product_name in loggedin_cart_products:
+                    loggedin_cart_line = loggedin_cart.lines.get(
+                        product__name=product_name)
+                    loggedin_cart_line.quantity += line.quantity
+                    loggedin_cart_line.save()
+                else:
+                    line.cart = loggedin_cart
+                    line.save()
 
             anonymous_cart.delete()
             request.cart = loggedin_cart
-            request.session['cart_id'] = loggedin_cart.id
+            request.session['cart_id'] = loggedin_cart.pk
 
-            logger.warning("Merged basket to id %d", loggedin_cart.id)
+            logger.warning("Merged basket to id %d", loggedin_cart.pk)
 
         except models.Cart.DoesNotExist:
             anonymous_cart.user = user
@@ -78,3 +85,13 @@ def merge_carts_if_found(sender, user, request, **kwargs):
 
             logger.warning("Assigned user to basket id {}".format(
                 anonymous_cart.id))
+    else:
+        try:
+            loggedin_cart = models.Cart.objects.get(
+                user=user, status=models.Cart.OPEN)
+
+            request.cart = loggedin_cart
+            request.session['cart_id'] = loggedin_cart.pk
+
+        except models.Cart.DoesNotExist:
+            pass

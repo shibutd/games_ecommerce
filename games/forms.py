@@ -1,7 +1,7 @@
 import logging
 from django import forms
 from django.core.mail import send_mail
-from django.forms import inlineformset_factory, formset_factory
+from django.forms import inlineformset_factory
 from django_countries.widgets import CountrySelectWidget
 from . import models
 
@@ -46,16 +46,6 @@ class AddressForm(forms.ModelForm):
     class Meta:
         model = models.Address
         exclude = ['user', 'address_type']
-        # fields = [
-        #     'user',
-        #     'street_address',
-        #     'apartment_address',
-        #     'zip_code',
-        #     'city',
-        #     'country',
-        #     'address_type',
-        #     'is_default'
-        # ]
         labels = {
             'street_address': 'Address',
             'apartment_address': 'Address 2 (optional)',
@@ -67,7 +57,6 @@ class AddressForm(forms.ModelForm):
             'apartment_address': forms.TextInput(
                 attrs={'placeholder': 'Apartment or Suite'}),
             'country': CountrySelectWidget(),
-            'address_type': forms.HiddenInput(),
         }
 
     def __init__(self, *args, **kwargs):
@@ -83,9 +72,13 @@ class AddressForm(forms.ModelForm):
         return True
 
 
-# AddressFormSet = formset_factory(
-#     AddressForm,
-#     extra=2,
-#     max_num=2,
-#     min_num=1,
-# )
+class CouponForm(forms.ModelForm):
+
+    class Meta:
+        model = models.Coupon
+        fields = ['code']
+        labels = {'code': ''}
+
+        widgets = {'code': forms.TextInput(
+            attrs={'placeholder': 'Promo code'})
+        }

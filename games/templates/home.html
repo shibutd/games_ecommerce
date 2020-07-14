@@ -1,5 +1,7 @@
 {% extends "_base.html" %}
 
+{% block head_title %}Games 4 Everyone{% endblock %}
+
 {% block content %}
 
 <!--Main layout-->
@@ -68,7 +70,7 @@
 
             <!--Card image-->
             <div class="view overlay">
-
+              
               <img src="{{ product.images.first.thumbnail.url }}" class="card-img-top">
               <a href="{{ product.get_absolute_url }}">
                 <div class="mask rgba-white-slight"></div>
