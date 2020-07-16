@@ -18,8 +18,8 @@ class ProductFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = models.Product
 
-    name = factory.Faker('name')
-    slug = factory.Faker('slug')
+    name = factory.Sequence(lambda n: 'product {}'.format(n))
+    slug = factory.Sequence(lambda n: 'product-{}'.format(n))
     price = factory.fuzzy.FuzzyDecimal(10.0, 100.0, 2)
 
 

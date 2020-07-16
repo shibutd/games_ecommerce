@@ -1,3 +1,5 @@
+import logging
+import random
 from functools import wraps
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404, resolve_url
@@ -7,9 +9,9 @@ from django.views.generic.base import View
 from django.contrib.auth.mixins import AccessMixin
 from django.contrib.auth.views import redirect_to_login
 from . import forms, models
+from .recommender import Recommender
 
 
-import logging
 logger = logging.getLogger(__name__)
 
 
@@ -34,6 +36,17 @@ class ProductDetailView(DetailView):
     template_name = 'product_detail.html'
     model = models.Product
     context_object_name = 'product'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        r = Recommender()
+        product = self.get_object()
+        suggested_products = r.suggest_products(product)
+        if not suggested_products:
+            suggested_products = random.choices(
+                models.Product.objects.all(), k=3)
+        context['suggested_products'] = suggested_products
+        return context
 
 
 class ContactUsView(FormView):
@@ -305,22 +318,6 @@ def cartline_is_valid(func):
     return wrapper
 
 
-# def cartline_is_valid(cart, slug):
-#     """
-#     Check if product exists in cart.
-#     """
-#     if not cart:
-#         return False
-#     product = get_object_or_404(models.Product, slug=slug)
-
-#     try:
-#         cartline = models.CartLine.objects.get(
-#             cart=cart, product=product)
-#     except models.CartLine.DoesNotExist:
-#         return False
-#     return cartline
-
-
 @cartline_is_valid
 def remove_single_from_cart(request, slug, cartline):
     """
@@ -329,12 +326,8 @@ def remove_single_from_cart(request, slug, cartline):
     if cartline.quantity > 1:
         cartline.quantity -= 1
 
-        logger.debug(f'{cartline.quantity}')
-
         cartline.save()
         return redirect('games:order-summary')
-
-    logger.debug(f'{cartline.quantity}')
 
     return redirect('games:order-summary')
 

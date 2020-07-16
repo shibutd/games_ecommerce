@@ -38,12 +38,14 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',
 
-    'django_extensions',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
     'crispy_forms',
     'django_countries',
+
+    'django_extensions',
+    'debug_toolbar',
 
     'games.apps.GamesConfig',
 ]
@@ -57,6 +59,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'games.middlewares.cart_middleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 ROOT_URLCONF = 'games_ecommerce.urls'
@@ -156,6 +159,12 @@ STATICFILES_FINDERS = [
 
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
+# REDIS
+
+REDIS_HOST = 'localhost'
+REDIS_PORT = 6379
+REDIS_DB = 1
+
 
 # EMAIL
 
@@ -190,7 +199,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 
-# CRISPY_FORMS
+# CRISPY FORMS
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
@@ -198,3 +207,10 @@ CRISPY_TEMPLATE_PACK = 'bootstrap4'
 # DJANGO COUNTRIES
 
 COUNTRIES_ONLY = ['GB', 'US']
+
+
+# DEBUG TOOLBAR
+
+INTERNAL_IPS = [
+    '127.0.0.1',
+]

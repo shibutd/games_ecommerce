@@ -10,10 +10,12 @@ psycopg2 = "*"
 django-crispy-forms = "*"
 pillow = "*"
 django-countries = "*"
+redis = "*"
 
 [dev-packages]
 django-extensions = "*"
 factory-boy = "*"
+django-debug-toolbar = "*"
 
 [requires]
 python_version = "3.7"
