@@ -2,7 +2,6 @@ from django.db import models
 from django.conf import settings
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.urls import reverse
-from django.core.validators import MinValueValidator
 from django_countries.fields import CountryField
 
 
@@ -65,7 +64,7 @@ class CustomUser(AbstractUser):
 
 class ProductTagManager(models.Manager):
     """
-     Manager for loading Tags using slug
+    Manager for loading Tags using slug
     """
 
     def get_by_natural_key(self, slug):
@@ -75,7 +74,6 @@ class ProductTagManager(models.Manager):
 class ProductTag(models.Model):
     name = models.CharField(max_length=32)
     slug = models.SlugField(max_length=48)
-    description = models.TextField(blank=True)
     active = models.BooleanField(default=True)
 
     objects = ProductTagManager()
@@ -87,9 +85,9 @@ class ProductTag(models.Model):
         return (self.slug,)
 
 
-class ActiveManager(models.Manager):
-    def active(self):
-        return self.filter(active=True)
+class InStockManager(models.Manager):
+    def in_stock(self):
+        return self.filter(in_stock=True)
 
 
 class Product(models.Model):
@@ -100,30 +98,26 @@ class Product(models.Model):
     discount_price = models.DecimalField(
         max_digits=6, decimal_places=2, blank=True, null=True)
     slug = models.SlugField(max_length=48)
-    active = models.BooleanField(default=True)
     in_stock = models.BooleanField(default=True)
     date_updated = models.DateTimeField(auto_now=True)
     tags = models.ManyToManyField('ProductTag', blank=True)
 
-    objects = ActiveManager()
+    objects = InStockManager()
 
     def __str__(self):
         return self.name
 
     def get_absolute_url(self):
-        return reverse('games:product', kwargs={
-            'slug': self.slug
-        })
+        return reverse('games:product',
+                       kwargs={'slug': self.slug})
 
     def get_add_to_cart_url(self):
-        return reverse('games:add-to-cart', kwargs={
-            'slug': self.slug
-        })
+        return reverse('games:add-to-cart',
+                       kwargs={'slug': self.slug})
 
     def get_remove_from_cart_url(self):
-        return reverse('games:remove-from-cart', kwargs={
-            'slug': self.slug
-        })
+        return reverse('games:remove-from-cart',
+                       kwargs={'slug': self.slug})
 
 
 class ProductImage(models.Model):
@@ -160,9 +154,9 @@ class Address(models.Model):
 
     def save(self, *args, **kwargs):
         if self.is_default:
-            Address.objects.filter(user=self.user,
-                                   address_type=self.address_type,
-                                   is_default=True).update(is_default=False)
+            default_adresses = Address.objects.filter(
+                user=self.user, address_type=self.address_type, is_default=True)
+            default_adresses.update(is_default=False)
         super(Address, self).save(*args, **kwargs)
 
 
@@ -216,7 +210,7 @@ class Cart(models.Model):
 
     def submit(self):
         order = self.order
-        for line in self.lines.all():
+        for line in self.lines.select_related('product'):
             order_line_data = {
                 'order': order,
                 'product': line.product,
@@ -235,8 +229,7 @@ class CartLine(models.Model):
         'Cart', related_name='lines', on_delete=models.CASCADE)
     product = models.ForeignKey(
         'Product', on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField(
-        default=1, validators=[MinValueValidator(1)])
+    quantity = models.PositiveIntegerField(default=1)
 
     def get_total_product_price(self):
         if self.product.discount_price:
@@ -291,26 +284,22 @@ class OrderLine(models.Model):
         'Order', on_delete=models.CASCADE, related_name="lines")
     product = models.ForeignKey(
         'Product', on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField(
-        default=1, validators=[MinValueValidator(1)])
-    status = models.IntegerField(choices=STATUSES, default=PROCESSING)
-
-    def get_total_product_price(self):
-        if self.product.discount_price:
-            price = self.product.discount_price
-        else:
-            price = self.product.price
-        return price * self.quantity
+    quantity = models.PositiveIntegerField(default=1)
+    status = models.IntegerField(
+        choices=STATUSES, default=PROCESSING)
 
 
 class Payment(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
-                             on_delete=models.SET_NULL, blank=True, null=True)
+                             on_delete=models.SET_NULL,
+                             blank=True, null=True)
+    # method = models.IntegerField(choices=METHODS)
     amount = models.DecimalField(max_digits=6, decimal_places=2)
     date_paid = models.DateField(auto_now_add=True)
 
     def __str__(self):
         return '{0}, {1}'.format(self.date_paid, self.amount)
+        # return '{0}, {1}'.format(self.method, self.amount)
 
 
 class Coupon(models.Model):

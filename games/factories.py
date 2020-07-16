@@ -29,20 +29,8 @@ class AddressFactory(factory.django.DjangoModelFactory):
         model = models.Address
 
     street_address = factory.Faker('address')
-    zip_code = factory.Faker('zip')
+    zip_code = factory.Sequence(lambda n: '000{}'.format(n))
     city = factory.Faker('city')
     country = 'US'
-    address_type = 10
+    address_type = models.Address.SHIPPING
     is_default = False
-
-
-# class OrderLineFactory(factory.django.DjangoModelFactory):
-#     class Meta:
-#         model = models.OrderLine
-
-
-# class OrderFactory(factory.django.DjangoModelFactory):
-#     user = factory.SubFactory(UserFactory)
-
-#     class Meta:
-#         model = models.Order

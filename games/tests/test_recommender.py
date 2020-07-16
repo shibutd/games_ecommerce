@@ -1,7 +1,7 @@
 import redis
 from django.test import TestCase
 from django.conf import settings
-from .. import models, factories
+from .. import factories
 from ..recommender import Recommender
 
 
@@ -20,7 +20,6 @@ class TestRecommendationSystem(TestCase):
 
     def test_get_product_key(self):
         product1 = self.products[0]
-        # product1 = factories.ProductFactory.create()
         key = self.recommender.get_product_key(product1.id)
         self.assertTrue(
             key, 'product:{}:purchased_with'.format(product1.id))
@@ -28,38 +27,37 @@ class TestRecommendationSystem(TestCase):
     def test_products_bought(self):
         product1, product2, product3, product4 = self.products
 
+        # Buy together 1, 2, 3
         self.recommender.products_bought(
             [product1, product2, product3])
 
         key_1 = self.recommender.get_product_key(product1.id)
         key_2 = self.recommender.get_product_key(product2.id)
         key_3 = self.recommender.get_product_key(product3.id)
-        # key_4 = self.recommender.get_product_key(product4.id)
 
-        self.assertEqual(self.r.zrange(key_1, 0, -1, withscores=True),
-                         [(str(product3.id).encode(), 1.0),
-                          (str(product2.id).encode(), 1.0)])
-        self.assertEqual(self.r.zrange(key_2, 0, -1, withscores=True),
-                         [(str(product3.id).encode(), 1.0),
-                          (str(product1.id).encode(), 1.0)])
-        self.assertEqual(self.r.zrange(key_3, 0, -1, withscores=True),
-                         [(str(product1.id).encode(), 1.0),
-                          (str(product2.id).encode(), 1.0)])
+        self.assertCountEqual(self.r.zrange(key_1, 0, -1, withscores=True),
+                              [(str(product2.id).encode(), 1.0),
+                               (str(product3.id).encode(), 1.0)])
+        self.assertCountEqual(self.r.zrange(key_2, 0, -1, withscores=True),
+                              [(str(product3.id).encode(), 1.0),
+                               (str(product1.id).encode(), 1.0)])
+        self.assertCountEqual(self.r.zrange(key_3, 0, -1, withscores=True),
+                              [(str(product1.id).encode(), 1.0),
+                               (str(product2.id).encode(), 1.0)])
 
+        # Buy together 1, 2, 4
         self.recommender.products_bought(
             [product1, product2, product4])
 
-        self.assertEqual(self.r.zrange(key_1, 0, -1, withscores=True),
-                         [(str(product3.id).encode(), 1.0),
-                          (str(product4.id).encode(), 1.0),
-                          (str(product2.id).encode(), 2.0)])
-        self.assertEqual(self.r.zrange(key_2, 0, -1, withscores=True),
-                         [(str(product3.id).encode(), 1.0),
-                          (str(product4.id).encode(), 1.0),
-                          (str(product1.id).encode(), 2.0)])
-        self.assertEqual(self.r.zrange(key_3, 0, -1, withscores=True),
-                         [(str(product1.id).encode(), 1.0),
-                          (str(product2.id).encode(), 1.0)])
+        self.assertEqual(self.r.zrange(key_1, 0, -1,
+                                       desc=True, withscores=True)[0],
+                         (str(product2.id).encode(), 2.0))
+        self.assertEqual(self.r.zrange(key_2, 0, -1,
+                                       desc=True, withscores=True)[0],
+                         (str(product1.id).encode(), 2.0))
+        self.assertCountEqual(self.r.zrange(key_3, 0, -1, withscores=True),
+                              [(str(product1.id).encode(), 1.0),
+                               (str(product2.id).encode(), 1.0)])
 
     def test_suggest_products(self):
         product1, product2, product3, product4 = self.products
@@ -84,12 +82,9 @@ class TestRecommendationSystem(TestCase):
                          [product2, product3])
         self.assertEqual(self.recommender.suggest_products(
             product1, max_results=1), [product2])
-
         self.assertEqual(self.recommender.suggest_products(product2),
                          [product1, product3])
-
-        self.assertEqual(self.recommender.suggest_products(product3),
-                         [product2, product1])
-
+        self.assertCountEqual(self.recommender.suggest_products(product3),
+                              [product2, product1])
         self.assertEqual(self.recommender.suggest_products(product4),
                          [])

@@ -8,7 +8,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class TestViews(TestCase):
+class TestHomePage(TestCase):
 
     def test_homepage_page_works(self):
         response = self.client.get(reverse('games:home'))
@@ -23,11 +23,50 @@ class TestViews(TestCase):
             views.HomePageView.as_view().__name__
         )
 
+    def test_home_page_filters_by_tags_and_in_stock(self):
+        product1 = factories.ProductFactory.create(in_stock=True)
+        product2 = factories.ProductFactory.create(in_stock=False)
+
+        tag = models.ProductTag.objects.create(
+            name="3D Action", slug="3d-action")
+
+        product1.tags.add(tag)
+        product2.tags.add(tag)
+
+        response = self.client.get(reverse("games:home"))
+        self.assertEqual(response.status_code, 200)
+
+        in_stock_list = models.Product.objects.in_stock().order_by("name")
+        self.assertEqual(
+            list(response.context["object_list"]),
+            list(in_stock_list),
+        )
+
+        response = self.client.get('{0}?tag={1}'.format(
+            reverse("games:home"), '3d-action'))
+        self.assertEqual(response.status_code, 200)
+
+        in_stock_tagged_list = (
+            models.Product.objects.in_stock()
+            .filter(tags__slug="3d-action")
+            .order_by("name")
+        )
+        self.assertEqual(
+            list(response.context["object_list"]),
+            list(in_stock_tagged_list),
+        )
+
+
+class TestAboutUsPage(TestCase):
+
     def test_about_us_page_works(self):
         response = self.client.get(reverse('games:about-us'))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'about_us.html')
         self.assertContains(response, 'About us')
+
+
+class TestContactUsPage(TestCase):
 
     def test_contact_us_page_works(self):
         response = self.client.get(reverse('games:contact-us'))
@@ -44,18 +83,8 @@ class TestViews(TestCase):
             views.ContactUsView.as_view().__name__
         )
 
-    def test_home_page_returns_active(self):
-        factories.ProductFactory()
-        factories.ProductFactory(active=False)
 
-        response = self.client.get(reverse("games:home"))
-        product_list = models.Product.objects.active().order_by("name")
-        self.assertEqual(
-            list(response.context["products"]),
-            list(product_list),
-        )
-
-class AddToCartTest(TestCase):
+class TestAddToCart(TestCase):
 
     def setUp(self):
         self.user = factories.UserFactory.create()
@@ -133,7 +162,7 @@ class AddToCartTest(TestCase):
             cart=cart, product=self.product1)[0].quantity, 3)
 
 
-class RemoveFromCartTest(TestCase):
+class TestRemoveFromCart(TestCase):
 
     def setUp(self):
         self.user = factories.UserFactory.create()
@@ -158,7 +187,7 @@ class RemoveFromCartTest(TestCase):
 
     def test_remove_single_from_cart_works(self):
         cart = models.Cart.objects.create(user=self.user)
-        cartline = models.CartLine.objects.create(
+        models.CartLine.objects.create(
             cart=cart, product=self.product, quantity=2)
 
         self.client.force_login(self.user)
@@ -208,11 +237,13 @@ class RemoveFromCartTest(TestCase):
                                                kwargs={'slug': self.product.slug}))
 
 
-class CheckoutViewTest(TestCase):
+class TestCheckoutView(TestCase):
 
-    def setUp(self):
-        self.user = factories.UserFactory.create()
-        self.product = factories.ProductFactory.create()
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = factories.UserFactory.create()
+        cls.product = factories.ProductFactory.create()
+
         shipping_data = {
             'shipping-street_address': '1234 Main St',
             'shipping-apartment_address': '22',
@@ -231,13 +262,17 @@ class CheckoutViewTest(TestCase):
             'billing-is_default': True,
             'billing-use_default': False,
         }
-        self.form_data = {**shipping_data, **billing_data}
+        cls.form_data = {**shipping_data, **billing_data}
 
-        self.use_default_form_data = {key: '' for key in self.form_data}
-        self.use_default_form_data['shipping-is_default'] = False
-        self.use_default_form_data['billing-is_default'] = False
-        self.use_default_form_data['shipping-use_default'] = True
-        self.use_default_form_data['billing-use_default'] = True
+        cls.use_default_form_data = {key: '' for key in cls.form_data}
+        cls.use_default_form_data['shipping-is_default'] = False
+        cls.use_default_form_data['billing-is_default'] = False
+        cls.use_default_form_data['shipping-use_default'] = True
+        cls.use_default_form_data['billing-use_default'] = True
+
+    def setUp(self):
+        # self.user = factories.UserFactory.create()
+        # self.product = factories.ProductFactory.create()
 
         self.client.force_login(self.user)
         self.client.get(self.product.get_add_to_cart_url())
@@ -290,7 +325,7 @@ class CheckoutViewTest(TestCase):
         self.assertRedirects(response, reverse("games:checkout"))
 
 
-class PaymentViewTest(TestCase):
+class TestPaymentView(TestCase):
 
     def setUp(self):
         self.user = factories.UserFactory.create()
@@ -345,35 +380,3 @@ class PaymentViewTest(TestCase):
         # response = self.client.get(reverse('games:payment'))
         # self.assertEqual(response.status_code, 302)
         # self.assertRedirects(response, reverse("games:home"))
-
-    # def test_products_page_filters_by_tags_and_active(self):
-    #     factories.ProductFactory(active=True)
-    #     factories.ProductFactory(active=False)
-
-        # cb = models.Product.objects.create(
-        #     name="The cathedral and the bazaar",
-        #     slug="cathedral-bazaar",
-        #     price=Decimal("10.00"),
-        # )
-
-        # cb.tags.create(name="Open source", slug="opensource")
-
-        # models.Product.objects.create(
-        #     name="Microsoft Windows guide",
-        #     slug="microsoft-windows-guide",
-        #     price=Decimal("12.00"),
-        # )
-        # response = self.client.get(
-        #     reverse("products", kwargs={"tag": "opensource"})
-        # )
-        # self.assertEqual(response.status_code, 200)
-        # self.assertContains(response, "BookTime")
-        # product_list = (
-        #     models.Product.objects.active()
-        #     .filter(tags__slug="opensource")
-        #     .order_by("name")
-        # )
-        # self.assertEqual(
-        #     list(response.context["object_list"]),
-        #     list(product_list),
-        # )

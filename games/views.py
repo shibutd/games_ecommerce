@@ -19,14 +19,34 @@ class HomePageView(ListView):
     """
     Display Home page.
     """
-    template_name = "home.html"
+    template_name = 'home.html'
     model = models.Product
     paginate_by = 3
     context_object_name = 'products'
 
     def get_queryset(self):
-        qs = super().get_queryset()
-        return qs.filter(active=True).order_by('name')
+        products = super().get_queryset()
+        if self.request.method == 'GET':
+            tag = self.request.GET.get('tag')
+        # Filter by tag if it is exitsts
+        if tag and tag != 'all':
+            tag = get_object_or_404(
+                models.ProductTag, slug=tag)
+            products = models.Product.objects.in_stock().filter(
+                tags=tag)
+        # Otherwise return all in stock products
+        else:
+            products = models.Product.objects.in_stock()
+
+        return products.order_by('name')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Display tags on home page
+        tags = list(models.ProductTag.objects.values_list(
+            'name', 'slug'))
+        context['tags'] = random.sample(tags, k=min(5, len(tags)))
+        return context
 
 
 class ProductDetailView(DetailView):
@@ -325,7 +345,6 @@ def remove_single_from_cart(request, slug, cartline):
     """
     if cartline.quantity > 1:
         cartline.quantity -= 1
-
         cartline.save()
         return redirect('games:order-summary')
 

@@ -45,7 +45,7 @@ INSTALLED_APPS = [
     'django_countries',
 
     'django_extensions',
-    'debug_toolbar',
+    # 'debug_toolbar',
 
     'games.apps.GamesConfig',
 ]
@@ -59,7 +59,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'games.middlewares.cart_middleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
+    # 'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 ROOT_URLCONF = 'games_ecommerce.urls'

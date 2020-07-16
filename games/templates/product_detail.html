@@ -23,13 +23,7 @@
 
           <p class="lead display-4 font-weight-bold">{{ product.name }}</p>
 
-          <div class="mb-3">
-            <a href="">
-              <span class="badge purple mr-1">{{ object.get_category_display }}</span>
-            </a>
-          </div>
-
-          <p class="lead">
+          <p class="lead font-weight-bold">
             {% if product.discount_price %}
               <span class="mr-1">
                 <del>${{ product.price }}</del>
@@ -44,8 +38,16 @@
             <p>{{ product.description|linebreaks }}</p>
 
           <p class="lead font-weight-bold">Tags</p>
-            <p>{{ product.tags.all|join:", "|default:"No tags available" }}</p>
 
+          <p>
+          {% for tag in product.tags.all %}
+            <a href="{% url 'games:home' %}?tag={{ tag.slug }}">
+            <span class="badge badge-pill danger-color mr-2">
+              {{ tag }}</a>
+            </span>
+
+          {% endfor %}
+          </p>
           {% if product.in_stock %}
 
             <p class="lead font-weight-bold">In stock</p>
@@ -74,7 +76,7 @@
 
     <div class="row d-flex justify-content-center wow fadeIn">
 
-      <div class="col-md-6 text-center">
+      <div class="col-md-6 text-center mb-4">
 
         <h4 class="my-4 h4">People who bought this also bought</h4>
 

@@ -43,7 +43,7 @@ class CustomerUserAdmin(DjangoUserAdmin):
 
 class ProductAdmin(admin.ModelAdmin):
     list_display = ('name', 'slug', 'in_stock', 'price')
-    list_filter = ('active', 'in_stock', 'date_updated')
+    list_filter = ('in_stock', 'date_updated')
     list_editable = ('in_stock',)
     search_fields = ('name',)
     prepopulated_fields = {"slug": ("name",)}
