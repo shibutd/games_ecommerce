@@ -8,6 +8,9 @@ from django.views.generic import ListView, DetailView, FormView
 from django.views.generic.base import View
 from django.contrib.auth.mixins import AccessMixin
 from django.contrib.auth.views import redirect_to_login
+from django.contrib.postgres.search import (SearchVector, SearchQuery,
+                                            SearchRank, TrigramSimilarity)
+from django.core.cache import cache
 from . import forms, models
 from .recommender import Recommender
 
@@ -21,30 +24,39 @@ class HomePageView(ListView):
     """
     template_name = 'home.html'
     model = models.Product
-    paginate_by = 3
+    paginate_by = 4
     context_object_name = 'products'
 
     def get_queryset(self):
-        products = super().get_queryset()
-        if self.request.method == 'GET':
-            tag = self.request.GET.get('tag')
+        tag = self.request.GET.get('tag')
         # Filter by tag if it is exitsts
         if tag and tag != 'all':
-            tag = get_object_or_404(
-                models.ProductTag, slug=tag)
-            products = models.Product.objects.in_stock().filter(
-                tags=tag)
+            # Check cache
+            products = cache.get(tag)
+            if not products:
+                tag = get_object_or_404(
+                    models.ProductTag, slug=tag)
+                products = models.Product.objects.in_stock().filter(
+                    tags=tag).order_by('name')
+                cache.set(tag, products)
         # Otherwise return all in stock products
         else:
-            products = models.Product.objects.in_stock()
+            products = cache.get('all_products')
+            if not products:
+                products = models.Product.objects.in_stock().order_by('name')
+            cache.set('all_products', products)
 
-        return products.order_by('name')
+        return products
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
         # Display tags on home page
-        tags = list(models.ProductTag.objects.values_list(
-            'name', 'slug'))
+        context = super().get_context_data(**kwargs)
+        # Check cache
+        tags = cache.get('all_tags')
+        if not tags:
+            tags = list(models.ProductTag.objects.values_list(
+                'name', 'slug'))
+            cache.set('all_tags', tags)
         context['tags'] = random.sample(tags, k=min(5, len(tags)))
         return context
 
@@ -84,8 +96,7 @@ class ContactUsView(FormView):
 
 class LoggedOpenCartExistsMixin(AccessMixin):
     """
-    Deny access to unauthenticated user and user without
-    OPEN cart.
+    Deny access to unauthenticated user and user without OPEN cart.
     """
     permission_denied_message = 'Your cart is empty.'
 
@@ -181,9 +192,11 @@ class CheckoutView(LoggedOpenCartExistsMixin, View):
         option, return default address if exists.
         """
         if form.cleaned_data['use_default']:
-            default_address, exists = self.get_default_address_if_exists(address_type)
+            default_address, exists = self.get_default_address_if_exists(
+                address_type)
             if not exists:
-                return '', 'You have no default {} address.'.format(form.prefix)
+                return '', 'You have no default {} address.'.format(
+                    form.prefix)
 
             return default_address, ''
 
@@ -205,7 +218,7 @@ class CheckoutView(LoggedOpenCartExistsMixin, View):
 
 class AddCouponView(LoggedOpenCartExistsMixin, View):
     """
-    Apply coupon.
+    Apply valid coupon to cart.
     """
 
     def post(self, request, *args, **kwargs):
@@ -223,6 +236,40 @@ class AddCouponView(LoggedOpenCartExistsMixin, View):
             cart.save()
             messages.success(request, 'Successfully added coupon.')
             return redirect('games:checkout')
+
+
+class SearchView(View):
+    """
+    Search products.
+    """
+
+    def get(self, request, *args, **kwargs):
+        query = request.GET.get('query')
+        if query:
+            form = forms.SearchForm(request.GET)
+            if form.is_valid():
+                query = form.cleaned_data['query']
+                search_vector = SearchVector('name', 'description')
+                search_query = SearchQuery(query)
+                # Serch for query in products' names and descriptions
+                results = models.Product.objects.annotate(
+                    search=search_vector,
+                    rank=SearchRank(search_vector, search_query)
+                ).filter(search=search_query).order_by('-rank')
+                # If serch return no results, check string similarities
+                if not results:
+                    search_similarity = TrigramSimilarity('name', query) \
+                        + TrigramSimilarity('description', query) \
+                        + TrigramSimilarity('tags__name', query)
+                    results = models.Product.objects.annotate(
+                        similarity=search_similarity,
+                    ).filter(similarity__gt=0.2).order_by('-similarity')
+                    print(len(results))
+
+                return render(request, 'search.html', {'form': form,
+                                                       'query': query,
+                                                       'results': results})
+        return redirect('games:home')
 
 
 class PaymentView(View):

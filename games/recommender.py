@@ -20,8 +20,7 @@ class Recommender(object):
                 # get the other products bought with each product
                 if product_id != with_id:
                     # increment score for product purchased together
-                    r.zincrby(
-                        self.get_product_key(product_id), 1, with_id)
+                    r.zincrby(self.get_product_key(product_id), 1, with_id)
 
     def suggest_products(self, product, max_results=3):
         suggestions = r.zrange(

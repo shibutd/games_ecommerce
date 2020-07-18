@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
+    'django.contrib.postgres',
 
     'allauth',
     'allauth.account',
@@ -45,7 +46,7 @@ INSTALLED_APPS = [
     'django_countries',
 
     'django_extensions',
-    # 'debug_toolbar',
+    'debug_toolbar',
 
     'games.apps.GamesConfig',
 ]
@@ -59,7 +60,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'games.middlewares.cart_middleware',
-    # 'debug_toolbar.middleware.DebugToolbarMiddleware',
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 ROOT_URLCONF = 'games_ecommerce.urls'
@@ -171,7 +172,20 @@ REDIS_DB = 1
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 
-# DJANGO-ALLAUTH
+# CACHE
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://127.0.0.1:6379/',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
+
+# ALLAUTH
 
 AUTH_USER_MODEL = "games.CustomUser"
 
@@ -204,7 +218,7 @@ AUTHENTICATION_BACKENDS = [
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 
-# DJANGO COUNTRIES
+# COUNTRIES
 
 COUNTRIES_ONLY = ['GB', 'US']
 

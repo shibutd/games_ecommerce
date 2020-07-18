@@ -1,8 +1,9 @@
+import logging
+from decimal import Decimal
 from django.test import TestCase
 from django.urls import reverse, resolve
 from django.contrib import auth
 from .. import views, models, forms, factories
-import logging
 
 
 logger = logging.getLogger(__name__)
@@ -380,3 +381,26 @@ class TestPaymentView(TestCase):
         # response = self.client.get(reverse('games:payment'))
         # self.assertEqual(response.status_code, 302)
         # self.assertRedirects(response, reverse("games:home"))
+
+
+class TestSearchView(TestCase):
+
+    def setUp(self):
+        self.product = models.Product.objects.create(
+            name='Call of Duty Modern Warfare',
+            price=Decimal(12.99),
+            slug='call-of-duty-modern-warfare',
+        )
+
+    def test_blank_query_redirects(self):
+        response = self.client.get(reverse('games:search'))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("games:home"))
+
+    def test_search_works(self):
+        response = self.client.get(
+            '{0}?query={1}'.format(reverse('games:search'),
+                                   'modern'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'search.html')
+        self.assertContains(response, self.product.name)

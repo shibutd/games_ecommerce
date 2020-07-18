@@ -82,3 +82,7 @@ class CouponForm(forms.ModelForm):
         widgets = {'code': forms.TextInput(
             attrs={'placeholder': 'Promo code'})
         }
+
+
+class SearchForm(forms.Form):
+    query = forms.CharField()
