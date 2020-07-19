@@ -1,9 +1,9 @@
 import logging
 from django import forms
-from django.core.mail import send_mail
 from django.forms import inlineformset_factory
 from django_countries.widgets import CountrySelectWidget
 from . import models
+from .tasks import contact_us_form_filled
 
 
 logger = logging.getLogger(__name__)
@@ -26,18 +26,7 @@ class ContactUsForm(forms.Form):
 
     def send_mail(self):
         logger.info("Sending email to customer service")
-
-        message = "From: {0}\n{1}".format(
-            self.cleaned_data["name"],
-            self.cleaned_data["message"],
-        )
-        send_mail(
-            "Message from contact-us form",
-            message,
-            "site@games4everyone.com",
-            ["customerservice@games4everyone.com"],
-            fail_silently=False,
-        )
+        contact_us_form_filled.delay(self.cleaned_data)
 
 
 class AddressForm(forms.ModelForm):

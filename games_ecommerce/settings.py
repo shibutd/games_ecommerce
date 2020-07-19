@@ -143,6 +143,7 @@ USE_L10N = True
 
 USE_TZ = True
 
+SESSION_COOKIE_AGE = 7 * 24 * 60 * 60
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
@@ -228,3 +229,9 @@ COUNTRIES_ONLY = ['GB', 'US']
 INTERNAL_IPS = [
     '127.0.0.1',
 ]
+
+
+# CELERY
+
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
+CELERY_BROKER_TRANSPORT = 'redis'

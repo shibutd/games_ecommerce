@@ -335,14 +335,12 @@ class TestPaymentView(TestCase):
         # Redirect user if not authenticated
         response = self.client.get(reverse('games:payment'))
         self.assertEqual(response.status_code, 302)
-        self.assertRedirects(
-            response, '{}?next={}'.format(reverse("account_login"),
-                                          reverse("games:payment"))
-        )
+        self.assertRedirects(response, '{0}?next={1}'.format(
+            reverse("account_login"), reverse("games:payment")))
 
         self.client.force_login(self.user)
         self.assertEquals(models.Cart.objects.filter(
-            user=self.user, status=models.Cart.OPEN).count(), 0)
+            user=self.user).count(), 0)
 
         # Redirect user if no open Cart
         response = self.client.get(reverse('games:payment'))
@@ -351,7 +349,7 @@ class TestPaymentView(TestCase):
 
         models.Cart.objects.create(user=self.user)
         self.assertEquals(models.Cart.objects.filter(
-            user=self.user, status=models.Cart.OPEN).count(), 1)
+            user=self.user).count(), 1)
 
         self.assertEqual(models.Order.objects.filter(
             user=self.user, status=models.Order.NEW).count(), 0)
@@ -369,18 +367,16 @@ class TestPaymentView(TestCase):
         self.assertEqual(response.status_code, 302)
 
         # User paid order
-        response = self.client.post(reverse('games:payment'))
-        self.assertEqual(response.status_code, 302)
-        self.assertRedirects(response, reverse("games:home"))
-
-        # self.assertEqual(len(models.Order.objects.filter(
-        #     user=self.user, status=models.Order.NEW)), 0)
-        # self.assertEqual(len(models.Order.objects.filter(
-        #     user=self.user, status=models.Order.PAID)), 1)
-
-        # response = self.client.get(reverse('games:payment'))
+        # response = self.client.post(reverse('games:payment'))
         # self.assertEqual(response.status_code, 302)
         # self.assertRedirects(response, reverse("games:home"))
+
+        models.Order.objects.all().update(
+            status=models.Order.PAID)
+
+        response = self.client.get(reverse('games:payment'))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("games:home"))
 
 
 class TestSearchView(TestCase):

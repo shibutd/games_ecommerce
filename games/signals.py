@@ -2,7 +2,7 @@ import logging
 from io import BytesIO
 from PIL import Image
 from django.core.files.base import ContentFile
-from django.db.models.signals import pre_save, post_delete, post_save, pre_delete, m2m_changed
+from django.db.models.signals import pre_save, post_save, pre_delete, m2m_changed
 from django.contrib.auth.signals import user_logged_in
 from django.dispatch import receiver
 from django.core.cache import cache
@@ -50,8 +50,7 @@ def merge_carts_if_found(sender, user, request, **kwargs):
         anonymous_cart = models.Cart.objects.get(pk=anonymous_cart_id)
         try:
             # Check if User already has a Cart
-            loggedin_cart = models.Cart.objects.get(
-                user=user, status=models.Cart.OPEN)
+            loggedin_cart = models.Cart.objects.get(user=user)
             # If yes, put every product_line into his Cart
             loggedin_cart_products = loggedin_cart.get_all_products()
 
@@ -82,8 +81,7 @@ def merge_carts_if_found(sender, user, request, **kwargs):
             # anonymous_cart.id))
     else:
         try:
-            loggedin_cart = models.Cart.objects.get(
-                user=user, status=models.Cart.OPEN)
+            loggedin_cart = models.Cart.objects.get(user=user)
 
             request.cart = loggedin_cart
             request.session['cart_id'] = loggedin_cart.pk
@@ -94,18 +92,27 @@ def merge_carts_if_found(sender, user, request, **kwargs):
 
 @receiver(pre_delete, sender=models.ProductTag)
 def producttag_post_delete_cache_clear(sender, instance, **kwargs):
+    """Clear cache containing all tags list before
+    deleting a tag.
+    """
     cache.delete(instance.slug)
     cache.delete('all_tags')
 
 
 @receiver(post_save, sender=models.ProductTag)
 def producttag_post_save_cache_clear(sender, instance, created, **kwargs):
+    """Clear cache containing all tags list after
+    creating new tag.
+    """
     if created:
         cache.delete('all_tags')
 
 
 @receiver(pre_delete, sender=models.Product)
 def product_post_delete_cache_clear(sender, instance, **kwargs):
+    """Clear cache containing all products' list and tags relating
+    to product being deleted before deleting a product.
+    """
     for tag in instance.tags.all():
         cache.delete(tag.slug)
     cache.delete('all_products')
@@ -113,13 +120,17 @@ def product_post_delete_cache_clear(sender, instance, **kwargs):
 
 @receiver(post_save, sender=models.Product)
 def product_post_save_cache_clear(sender, instance, created, **kwargs):
-    # for tag in instance.tags.all():
-    #     cache.delete(tag.slug)
+    """Clear cache containing all products' list after
+    creating new product.
+    """
     if created:
         cache.delete('all_products')
 
 
 @receiver(m2m_changed, sender=models.Product.tags.through)
 def product_m2m_changed_cache_clear(sender, instance, **kwargs):
+    """Clear cache of tags relating to product
+    after adding new tags to it.
+    """
     for tag in instance.tags.all():
         cache.delete(tag.slug)

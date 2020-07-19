@@ -13,6 +13,7 @@ from django.contrib.postgres.search import (SearchVector, SearchQuery,
 from django.core.cache import cache
 from . import forms, models
 from .recommender import Recommender
+from .tasks import order_created
 
 
 logger = logging.getLogger(__name__)
@@ -135,19 +136,19 @@ class CheckoutView(LoggedOpenCartExistsMixin, View):
         billing_form = forms.AddressForm(prefix='billing')
         couponform = forms.CouponForm(prefix='coupon')
 
-        context = {'formset': (shipping_form, billing_form),
-                   'couponform': couponform,
-                   'DISPLAY_COUPON_FORM': True}
+        context = {'shipping_form': shipping_form,
+                   'billing_form': billing_form,
+                   'couponform': couponform}
 
-        default_shipping_address, exists = self.get_default_address_if_exists(
-            models.Address.SHIPPING)
-        if exists:
-            context.update({'shipping_address': default_shipping_address})
+        for address in [{'name': 'shipping_address',
+                         'type': models.Address.SHIPPING},
+                        {'name': 'billing_address',
+                         'type': models.Address.BILLING}]:
+            default_address, exists = self.get_default_address_if_exists(
+                address['type'])
+            if exists:
+                context.update({address['name']: default_address})
 
-        default_billing_address, exists = self.get_default_address_if_exists(
-            models.Address.BILLING)
-        if exists:
-            context.update({'billing_address': default_billing_address})
         return render(request, 'checkout.html', context)
 
     def post(self, request, *args, **kwargs):
@@ -188,7 +189,7 @@ class CheckoutView(LoggedOpenCartExistsMixin, View):
 
     def get_address_from_form(self, form, address_type):
         """
-        Return addres from AddressForm, if user checked 'use default'
+        Return addres from AddressForm. If user checked 'use default'
         option, return default address if exists.
         """
         if form.cleaned_data['use_default']:
@@ -278,13 +279,9 @@ class PaymentView(View):
     """
 
     def get(self, request, *args, **kwargs):
-        context = {
-            'DISPLAY_COUPON_FORM': False,
-        }
-        return render(request, 'payment.html', context)
+        return render(request, 'payment.html')
 
     def post(self, request, *args, **kwargs):
-        del self.request.session['cart_id']
         cart = request.cart
         # Create the payment
         payment = models.Payment(
@@ -296,6 +293,11 @@ class PaymentView(View):
         order.payment = payment
         order.status = models.Order.PAID
         order.save()
+        # Send e-mail to the customer
+        order_created.delay(order.pk)
+        # Delete cart
+        del self.request.session['cart_id']
+        cart.delete()
 
         messages.success(request, 'Your order was successfully paid!')
         return redirect('games:home')

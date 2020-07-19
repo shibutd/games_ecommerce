@@ -132,7 +132,6 @@ class TestModel(TestCase):
         order.refresh_from_db()
 
         self.assertEqual(order.user, self.user)
-        self.assertEqual(order.cart, self.cart)
         self.assertEqual(order.shipping_address, shipping)
         self.assertEqual(order.billing_address, billing)
         self.assertEqual(order.status, models.Order.NEW)
@@ -143,19 +142,22 @@ class TestModel(TestCase):
         models.CartLine.objects.create(cart=self.cart, product=p1)
         models.CartLine.objects.create(cart=self.cart, product=p2)
 
-        models.Order.objects.create(user=self.user, cart=self.cart)
+        models.Order.objects.create(user=self.user)
 
         order = self.cart.submit()
         order.refresh_from_db()
 
-        lines = order.lines.all()
-        self.assertCountEqual(
-            [lines[0].product, lines[1].product], [p1, p2])
+        cart_lines = order.lines.all()
+        order_lines = order.lines.all()
 
-        self.assertEqual(models.Cart.objects.filter(
-            status=models.Cart.SUBMITTED).count(), 1)
-        self.assertEqual(models.CartLine.objects.filter(
-            cart=self.cart).count(), 0)
+        self.assertEqual(models.OrderLine.objects.filter(
+            order=order).count(), 2)
+        self.assertCountEqual(
+            [cart_lines[0].product, cart_lines[1].product], [p1, p2])
+        self.assertEqual(
+            cart_lines[0].quantity, order_lines[0].quantity)
+        self.assertEqual(
+            cart_lines[1].quantity, order_lines[1].quantity)
 
     def test_cartline_get_total_product_price_works(self):
         p1, p2 = self.products

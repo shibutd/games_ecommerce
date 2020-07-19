@@ -1,14 +1,12 @@
 from django.test import TestCase
-from django.core import mail
+from unittest.mock import patch
 from .. import forms
-import logging
 
-
-logger = logging.getLogger(__name__)
 
 class TestForms(TestCase):
 
-    def test_valid_contact_us_form_sends_email(self):
+    @patch('games.tasks.order_created')
+    def test_valid_contact_us_form_sends_email(self, mock_order_created):
         form = forms.ContactUsForm({
             'name': "Luke Skywalker",
             'message': "Hi there"
@@ -18,9 +16,8 @@ class TestForms(TestCase):
         with self.assertLogs('games.forms', level='INFO') as cm:
             form.send_mail()
 
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(
-            mail.outbox[0].subject, 'Message from contact-us form')
+        self.assertTrue(mock_order_created.called_with(
+            form.cleaned_data))
         self.assertGreaterEqual(len(cm.output), 1)
 
     def test_invalid_contact_us_form(self):

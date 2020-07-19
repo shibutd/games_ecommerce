@@ -161,15 +161,11 @@ class Address(models.Model):
 
 
 class Cart(models.Model):
-    OPEN = 10
-    SUBMITTED = 20
-    STATUSES = ((OPEN, "Open"), (SUBMITTED, "Submitted"))
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
                              on_delete=models.CASCADE,
                              blank=True, null=True)
     coupon = models.ForeignKey(
         'Coupon', on_delete=models.SET_NULL, blank=True, null=True)
-    status = models.IntegerField(choices=STATUSES, default=OPEN)
 
     def is_empty(self):
         return self.lines.all().count() == 0
@@ -177,9 +173,12 @@ class Cart(models.Model):
     def count(self):
         return sum(i.quantity for i in self.lines.all())
 
+    def lines_with_products(self):
+        return self.lines.select_related('product')
+
     def get_total(self):
         total = 0
-        for cart_line in self.lines.all():
+        for cart_line in self.lines.select_related('product'):
             total += cart_line.get_total_product_price()
         if self.coupon:
             total -= self.coupon.amount
@@ -192,15 +191,15 @@ class Cart(models.Model):
         return products
 
     def create_order(self, shipping_address, billing_address):
-        if hasattr(self, 'order'):
-            order = self.order
+        order = Order.objects.filter(
+            user=self.user, status=Order.NEW).first()
+        if order:
             order.shipping_address = shipping_address
             order.billing_address = billing_address
             order.save()
         else:
             order_data = {
                 'user': self.user,
-                'cart': self,
                 'shipping_address': shipping_address,
                 'billing_address': billing_address,
             }
@@ -209,7 +208,8 @@ class Cart(models.Model):
         return order
 
     def submit(self):
-        order = self.order
+        order = Order.objects.filter(
+            user=self.user, status=Order.NEW).first()
         for line in self.lines.select_related('product'):
             order_line_data = {
                 'order': order,
@@ -217,10 +217,7 @@ class Cart(models.Model):
                 'quantity': line.quantity,
             }
             OrderLine.objects.create(**order_line_data)
-            line.delete()
 
-        self.status = Cart.SUBMITTED
-        self.save()
         return order
 
 
@@ -232,10 +229,7 @@ class CartLine(models.Model):
     quantity = models.PositiveIntegerField(default=1)
 
     def get_total_product_price(self):
-        if self.product.discount_price:
-            price = self.product.discount_price
-        else:
-            price = self.product.price
+        price = self.product.discount_price or self.product.price
         return price * self.quantity
 
 
@@ -248,10 +242,6 @@ class Order(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
                              on_delete=models.CASCADE)
     status = models.IntegerField(choices=STATUSES, default=NEW)
-    cart = models.OneToOneField(
-        'Cart',
-        on_delete=models.SET_NULL, blank=True, null=True
-    )
     billing_address = models.ForeignKey(
         'Address',
         related_name='billing_address',

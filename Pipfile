@@ -12,11 +12,13 @@ pillow = "*"
 django-countries = "*"
 redis = "*"
 django-redis = "*"
+celery = "*"
 
 [dev-packages]
 django-extensions = "*"
 factory-boy = "*"
 django-debug-toolbar = "*"
+flower = "*"
 
 [requires]
 python_version = "3.7"
