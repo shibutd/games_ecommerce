@@ -1,24 +1,19 @@
 {% load cart_template_tags %}
 
-<!-- Navbar -->
 <nav class="navbar fixed-top navbar-expand-lg navbar-light white scrolling-navbar">
   <div class="container">
 
-    <!-- Brand -->
     <a class="navbar-brand waves-effect" href="/">
       <strong class="blue-text">Games4Everyone</strong>
     </a>
 
-    <!-- Collapse -->
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
       aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
 
-    <!-- Links -->
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
 
-      <!-- Left -->
       <ul class="navbar-nav mr-auto">
         <li class="nav-item {% if request.path == "/" %}active{% endif %}">
           <a class="nav-link waves-effect" href="{% url "games:home" %}">Home
@@ -34,10 +29,8 @@
           <a class="nav-link waves-effect" href="{% url "games:contact-us" %}">Contact Us
           </a>
         </li>
-
       </ul>
 
-      <!-- Right -->
       <ul class="navbar-nav nav-flex-icons">
         
         {% if request.user.is_authenticated %}
@@ -53,7 +46,6 @@
           </div>
 
         {% else %}
-
 
           <li class="nav-item">
             <a href="{% url "account_login" %}" class="nav-link waves-effect">Log in</a>
@@ -78,7 +70,5 @@
       </ul>
 
     </div>
-
   </div>
 </nav>
-<!-- Navbar -->

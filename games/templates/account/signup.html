@@ -2,6 +2,7 @@
 
 {% load i18n %}
 {% load crispy_forms_tags %}
+{% load socialaccount %}
 
 {% block head_title %}{% trans "Signup" %}{% endblock %}
 
@@ -14,6 +15,10 @@
 					<h1>{% trans "Sign Up" %}</h1>
 
 					<p>{% blocktrans %}Already have an account? Then please <a href="{{ login_url }}">sign in</a>.{% endblocktrans %}</p>
+
+          <p>
+            <i class="fab fa-google pr-2"> </i><a href="{% provider_login_url 'google' %}">Login with Google</a>
+          </p>
 
 					<form class="signup" id="signup_form" method="post" action="{% url 'account_signup' %}">
 					  {% csrf_token %}

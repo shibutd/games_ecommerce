@@ -23,6 +23,14 @@ class ProductFactory(factory.django.DjangoModelFactory):
     price = factory.fuzzy.FuzzyDecimal(10.0, 100.0, 2)
 
 
+class ProductImageFactory(factory.django.DjangoModelFactory):
+
+    class Meta:
+        model = models.ProductImage
+
+    image = factory.django.ImageField(
+        filename='example.jpg', width=1000, height=1000, color='blue')
+
 class AddressFactory(factory.django.DjangoModelFactory):
 
     class Meta:
