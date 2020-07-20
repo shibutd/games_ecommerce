@@ -5,7 +5,29 @@ from django.core.cache import cache
 from .. import models, factories
 
 
-class TestSignal(TestCase):
+class TestThumbnailSignal(TestCase):
+
+    @override_settings(MEDIA_ROOT=tempfile.gettempdir())
+    def test_thumbnails_are_generated_on_save(self):
+        # Create product instance
+        filename = 'example.jpg'
+        productimage = factories.ProductImageFactory.create(
+            image__name=filename)
+        productimage.refresh_from_db()
+        # Ensure saved thumbnail is thumbnail of ProductImage
+        storage_path = os.path.join(tempfile.gettempdir(),
+                                    'product-thumbnails',
+                                    filename)
+
+        with open(storage_path, "rb") as f:
+            expected_content = f.read()
+            self.assertEqual(productimage.thumbnail.read(),
+                             expected_content)
+
+        productimage.thumbnail.delete(save=False)
+        productimage.image.delete(save=False)
+
+class TestCacheSignal(TestCase):
 
     def setUp(self):
         cache.clear()
@@ -18,26 +40,8 @@ class TestSignal(TestCase):
         cache.set('all_tags', 26)
         cache.set('all_products', 28)
 
-    @override_settings(MEDIA_ROOT=tempfile.gettempdir())
-    def test_thumbnails_are_generated_on_save(self):
-        # Create product instance
-        productimage = factories.ProductImageFactory.build(
-            product=self.product)
-        productimage.save()
-        productimage.refresh_from_db()
-        # Ensure saved thumbnail is thumbnail of ProductImage
-        path, filename = os.path.split(productimage.image.name)
-        storage_path = os.path.join(tempfile.gettempdir(),
-                                    'product-thumbnails',
-                                    filename)
-
-        with open(storage_path, "rb") as f:
-            expected_content = f.read()
-            self.assertEqual(productimage.thumbnail.read(),
-                             expected_content)
-
-        productimage.thumbnail.delete(save=False)
-        productimage.image.delete(save=False)
+    def tearDown(self):
+        cache.clear()
 
     def test_producttag_cache_clear_on_delete(self):
         tag_slug = self.tag.slug

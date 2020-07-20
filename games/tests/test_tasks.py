@@ -5,7 +5,7 @@ from django.utils import timezone
 from .. import models, factories, tasks
 
 
-class FooTaskTestCase(TestCase):
+class TestCeleryTask(TestCase):
 
     @override_settings(CELERY_TASK_ALWAYS_EAGER=True)
     def test_order_created(self):

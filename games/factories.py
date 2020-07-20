@@ -1,4 +1,6 @@
 from django.conf import settings
+from django.utils import timezone
+
 import factory
 import factory.fuzzy
 from . import models
@@ -28,6 +30,7 @@ class ProductImageFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = models.ProductImage
 
+    product = factory.SubFactory(ProductFactory)
     image = factory.django.ImageField(
         filename='example.jpg', width=1000, height=1000, color='blue')
 
@@ -42,3 +45,26 @@ class AddressFactory(factory.django.DjangoModelFactory):
     country = 'US'
     address_type = models.Address.SHIPPING
     is_default = False
+
+
+class PaymentFactory(factory.django.DjangoModelFactory):
+
+    class Meta:
+        model = models.Payment
+
+    amount = factory.fuzzy.FuzzyDecimal(10.0, 100.0, 2)
+
+
+class OrderLineFactory(factory.django.DjangoModelFactory):
+
+    class Meta:
+        model = models.OrderLine
+
+
+class OrderFactory(factory.django.DjangoModelFactory):
+
+    class Meta:
+        model = models.Order
+
+    user = factory.SubFactory(UserFactory)
+    payment = factory.SubFactory(PaymentFactory)

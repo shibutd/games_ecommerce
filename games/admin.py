@@ -1,11 +1,52 @@
+import logging
+import csv
+from datetime import datetime, timedelta
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils.html import format_html
-from . import models
+from django.utils import timezone
+from django.template.response import TemplateResponse
+from django.db.models.functions import TruncDay
+from django.db.models import Count, Q
+from django.urls import path
+from django.http import HttpResponse
+from allauth.socialaccount.models import (SocialApp, SocialAccount,
+                                          SocialToken)
+from .models import (CustomUser, Address, Product, ProductTag,
+                     Order, OrderLine, ProductImage, Payment, Coupon)
+from .forms import PeriodSelectForm
+
+logger = logging.getLogger(__name__)
+
+
+def export_to_csv(modeladmin, request, queryset):
+    opts = modeladmin.model._meta
+    content_disposition = 'attachment; filename={opts.verbose_name}.csv'
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = content_disposition
+    writer = csv.writer(response)
+
+    fields = [field for field in opts.get_fields() if not
+              field.many_to_many and not field.one_to_many]
+    # Write a first row with header information
+    writer.writerow([field.verbose_name for field in fields])
+    # Write data rows
+    for obj in queryset:
+        data_row = []
+        for field in fields:
+            value = getattr(obj, field.name)
+            if isinstance(value, datetime):
+                value = value.strftime('%d/%m/%Y')
+            data_row.append(value)
+        writer.writerow(data_row)
+    return response
+
+
+export_to_csv.short_description = 'Export to CSV'
 
 
 class AddressInline(admin.TabularInline):
-    model = models.Address
+    model = Address
 
 
 class CustomerUserAdmin(DjangoUserAdmin):
@@ -13,31 +54,31 @@ class CustomerUserAdmin(DjangoUserAdmin):
     Define admin model for custom User model with no username field.
     """
     fieldsets = (
-        (None, {"fields": ("email", "password")}),
-        ("Personal info", {
-            "fields": ("first_name", "last_name")
+        (None, {'fields': ('email', 'password')}),
+        ('Personal info', {
+            'fields': ('first_name', 'last_name')
         }),
-        ("Permissions", {
-            "fields": (
-                "is_active",
-                "is_staff",
-                "is_superuser",
-                "groups",
-                "user_permissions",
+        ('Permissions', {
+            'fields': (
+                'is_active',
+                'is_staff',
+                'is_superuser',
+                'groups',
+                'user_permissions',
             )
         }),
-        ("Important dates", {
-            "fields": ("last_login", "date_joined")
+        ('Important dates', {
+            'fields': ('last_login', 'date_joined')
         }),
     )
     add_fieldsets = (
         (None, {
-            "fields": ("email", "password1", "password2"),
+            'fields': ('email', 'password1', 'password2'),
         }),
     )
-    list_display = ("email", "first_name", "last_name", "is_staff")
-    search_fields = ("email", "first_name", "last_name")
-    ordering = ("email",)
+    list_display = ('email', 'first_name', 'last_name', 'is_staff')
+    search_fields = ('email', 'first_name', 'last_name')
+    ordering = ('email',)
     inlines = [AddressInline]
 
 
@@ -46,19 +87,20 @@ class ProductAdmin(admin.ModelAdmin):
     list_filter = ('in_stock', 'date_updated')
     list_editable = ('in_stock',)
     search_fields = ('name',)
-    prepopulated_fields = {"slug": ("name",)}
+    prepopulated_fields = {'slug': ('name',)}
     autocomplete_fields = ('tags',)
 
 
 class ProductInline(admin.TabularInline):
-    model = models.ProductTag.product_set.through
+    model = ProductTag.product_set.through
+    extra = 0
 
 
 class ProductTagAdmin(admin.ModelAdmin):
     list_display = ('name', 'slug')
     list_filter = ('active',)
     search_fields = ('name',)
-    prepopulated_fields = {"slug": ("name",)}
+    prepopulated_fields = {'slug': ('name',)}
     autocomplete_fields = ('product',)
     inlines = [ProductInline]
 
@@ -75,30 +117,38 @@ class ProductImageAdmin(admin.ModelAdmin):
         if obj.thumbnail:
             return format_html(
                 '<img src={}/>'.format(obj.thumbnail.url))
-        return "-"
+        return '-'
 
-    # Defines the column name for the list_display
-    thumbnail_tag.short_description = "Thumbnail"
+    thumbnail_tag.short_description = 'Thumbnail'
 
     def product_name(self, obj):
         return obj.product.name
 
 
+class OrderLineInline(admin.TabularInline):
+    model = OrderLine
+    extra = 0
+    raw_id_fields = ('product',)
+    fields = ('product', 'status', 'quantity')
+    readonly_fields = ('quantity',)
+    can_delete = False
+
+
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['user', 'status', 'billing_address',
-                    'shipping_address', 'payment']
+    list_display = ('id', 'user', 'billing_address', 'shipping_address',
+                    'status', 'payment')
 
     list_display_links = ['user', 'billing_address', 'shipping_address',
                           'payment']
-
-    list_filter = ['status']
-
+    list_filter = ('status', 'shipping_address__country', 'date_added')
     search_fields = ['user__email']
+    inlines = [OrderLineInline]
+    actions = [export_to_csv]
 
 
 class AddressAdmin(admin.ModelAdmin):
     list_display = ['user', 'street_address', 'apartment_address',
-                    'zip_code', 'city', 'country', 'address_type',
+                    'city', 'country', 'address_type',
                     'is_default']
 
     list_filter = ['is_default', 'address_type', 'country']
@@ -106,11 +156,111 @@ class AddressAdmin(admin.ModelAdmin):
     search_fields = ['user__email', 'street_address', 'city']
 
 
-admin.site.register(models.CustomUser, CustomerUserAdmin)
-admin.site.register(models.Product, ProductAdmin)
-admin.site.register(models.ProductTag, ProductTagAdmin)
-admin.site.register(models.ProductImage, ProductImageAdmin)
-admin.site.register(models.Order, OrderAdmin)
-admin.site.register(models.Address, AddressAdmin)
-admin.site.register(models.Payment)
-admin.site.register(models.Coupon)
+class ReportingAdminSite:
+    def get_urls(self):
+        urls = super().get_urls()
+        my_urls = [
+            path('orders_per_day/',
+                 self.admin_view(self.orders_per_day),
+                 name='orders-per-day'),
+            path('most_bought_products/',
+                 self.admin_view(self.most_bought_products),
+                 name='most-bought-products'),
+        ]
+        return my_urls + urls
+
+    def orders_per_day(self, request):
+        starting_day = timezone.now() - timedelta(days=180)
+        order_data = (Order.objects.filter(
+            Q(status=Order.PAID) & Q(payment__date_paid__gt=starting_day))
+            .annotate(day=TruncDay('payment__date_paid'))
+            .values('day')
+            .annotate(c=Count('id'))
+        )
+        labels = [
+            x['day'].strftime('%Y-%m-%d') for x in order_data]
+
+        values = [x['c'] for x in order_data]
+
+        context = dict(
+            self.each_context(request),
+            title='Orders per day',
+            labels=labels,
+            values=values,
+        )
+        return TemplateResponse(
+            request, 'orders_per_day.html', context)
+
+    def most_bought_products(self, request):
+        if request.method == 'POST':
+            form = PeriodSelectForm(request.POST)
+            if form.is_valid():
+                days = form.cleaned_data['period']
+                starting_day = timezone.now() - timedelta(days=days)
+                data = (OrderLine.objects.filter(
+                    Q(order__status=Order.PAID) & Q(
+                        order__date_added__gt=starting_day))
+                    .values('product__name')
+                    .annotate(c=Count('id'))
+                )
+                labels = [x['product__name'] for x in data]
+                values = [x['c'] for x in data]
+        else:
+            form = PeriodSelectForm()
+            labels = None
+            values = None
+
+        context = dict(
+            self.each_context(request),
+            title='Most bought products',
+            form=form,
+            labels=labels,
+            values=values,
+        )
+        return TemplateResponse(
+            request, 'most_bought_products.html', context)
+
+    def index(self, request, extra_context=None):
+        reporting_pages = [
+            {
+                'name': 'Orders per day',
+                'link': 'orders_per_day/',
+            },
+            {
+                'name': 'Most bought products',
+                'link': 'most_bought_products/',
+            },
+        ]
+        if not extra_context:
+            extra_context = {}
+        extra_context = {'reporting_pages': reporting_pages}
+        return super().index(request, extra_context)
+
+
+class MyAdminSite(ReportingAdminSite, admin.AdminSite):
+    site_header = 'Games4Everyone administration'
+    site_header_color = 'black'
+    module_caption_color = 'grey'
+
+    def each_context(self, request):
+        context = super().each_context(request)
+        context['site_header_color'] = self.site_header_color
+        context['module_caption_color'] = self.module_caption_color
+        return context
+
+    def has_permission(self, request):
+        return request.user.is_staff
+
+
+new_admin = MyAdminSite(name='myadmin')
+new_admin.register(CustomUser, CustomerUserAdmin)
+new_admin.register(Product, ProductAdmin)
+new_admin.register(ProductTag, ProductTagAdmin)
+new_admin.register(ProductImage, ProductImageAdmin)
+new_admin.register(Order, OrderAdmin)
+new_admin.register(Address, AddressAdmin)
+new_admin.register(Payment)
+new_admin.register(Coupon)
+new_admin.register(SocialApp)
+new_admin.register(SocialAccount)
+new_admin.register(SocialToken)
