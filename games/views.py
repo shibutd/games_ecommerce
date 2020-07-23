@@ -11,6 +11,7 @@ from django.contrib.auth.views import redirect_to_login
 from django.contrib.postgres.search import (SearchVector, SearchQuery,
                                             SearchRank, TrigramSimilarity)
 from django.core.cache import cache
+from django.db import transaction
 from . import forms, models
 from .recommender import Recommender
 from .tasks import order_created
@@ -281,6 +282,7 @@ class PaymentView(View):
     def get(self, request, *args, **kwargs):
         return render(request, 'payment.html')
 
+    @transaction.atomic
     def post(self, request, *args, **kwargs):
         cart = request.cart
         # Create the payment
@@ -294,11 +296,11 @@ class PaymentView(View):
         order.status = models.Order.PAID
         order.save()
         # Send e-mail to the customer
-        order_created.delay(order.pk)
         # Delete cart
         del self.request.session['cart_id']
         cart.delete()
 
+        transaction.on_commit(lambda: order_created.delay(order.id))
         messages.success(request, 'Your order was successfully paid!')
         return redirect('games:home')
 

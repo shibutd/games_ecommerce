@@ -1,10 +1,14 @@
 from __future__ import absolute_import, unicode_literals
+import logging
+from datetime import timedelta
 from celery import task
-from celery.decorators import periodic_task
-from celery.schedules import crontab
 from django.core.mail import send_mail
 from django.utils import timezone
+from django.db.models import Subquery
+from django.contrib.auth import get_user_model
 from .models import Order, Cart
+
+logger = logging.getLogger(__name__).setLevel("INFO")
 
 
 @task
@@ -15,13 +19,13 @@ def order_created(order_id):
     """
     order = Order.objects.get(pk=order_id)
     subject = 'Order nr. {}'.format(order.pk)
-    message = 'You have successfully placed an order.\n' \
-        + 'Your order ID is {}'.format(order.pk)
+    message = 'You have successfully placed an order.\n \
+        + Your order ID is {}'.format(order.pk)
     mail_sent = send_mail(
         subject,
         message,
         'site@games4everyone.com',
-        [order.user.email]
+        [order.user.email],
     )
     return mail_sent
 
@@ -46,23 +50,13 @@ def contact_us_form_filled(form_data):
     return mail_sent
 
 
-def timedelta_in_days(time):
-    """
-    Compute timedelta in days between cuurent time
-    and given time.
-    """
-    timedelta = timezone.now() - time
-    return timedelta.days
-
-
-@periodic_task(run_every=crontab(hour=4,
-                                 minute=30,
-                                 day_of_week=[1, 4]))
+@task
 def delete_unactive_carts():
     """
     Delete Carts if user was logged in more than 2 weeks ago.
     """
-    carts = Cart.objects.select_related('user')
-    for cart in carts:
-        if timedelta_in_days(cart.user.last_login) >= 14:
-            cart.delete()
+    two_weeks_ago = timezone.now() - timedelta(days=14)
+    users = get_user_model().objects.filter(
+        last_login__lt=two_weeks_ago)
+    Cart.objects.select_related('user').filter(
+        user__pk__in=Subquery(users.values('pk'))).delete()

@@ -41,7 +41,7 @@ class TestCeleryTask(TestCase):
         user1, user2 = factories.UserFactory.create_batch(2)
         user1.last_login = timezone.now()
         user1.save()
-        user2.last_login = timezone.now() - timedelta(days=15)
+        user2.last_login = timezone.now() - timedelta(days=16)
         user2.save()
 
         models.Cart.objects.create(user=user1)

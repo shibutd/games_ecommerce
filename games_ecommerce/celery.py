@@ -10,3 +10,12 @@ app = Celery('games_ecommerce')
 
 app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
+
+
+# app.conf.beat_schedule = {
+#     'run-every-30-seconds': {
+#         'task': 'games.tasks.delete_unactive_carts',
+#         'schedule': 30.0,
+#         'args': (),
+#     },
+# }

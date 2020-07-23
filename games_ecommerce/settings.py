@@ -24,7 +24,8 @@ SECRET_KEY = '3^s*%x^f@0f$pr(n1kc3_(s9+)$76h%_xe8_7m$$c5%y*uy+8h'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = ['127.0.0.1']
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
 
 
 # Application definition
@@ -78,6 +79,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.media',
             ],
         },
     },
@@ -98,17 +100,18 @@ WSGI_APPLICATION = 'games_ecommerce.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        # 'NAME': 'postgres',
-        'NAME': 'games_ecommerce',
-
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'postgres',
+        # 'NAME': 'games_ecommerce',
+        # 'NAME': os.environ.get('POSTGRES_DB', 'games_ecommerce'),
         'USER': 'postgres',
-        'PASSWORD': 'aMhKuJqhbzLrRe93ypCB',
-        # 'PASSWORD': 'postgres',
-
-        'HOST': '127.0.0.1',
-        # 'HOST': 'db',
-
+        # 'USER': os.environ.get('POSTGRES_USER', 'postgres'),
+        # 'PASSWORD': 'aMhKuJqhbzLrRe93ypCB',
+        'PASSWORD': 'postgres',
+        # 'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'aMhKuJqhbzLrRe93ypCB'),
+        # 'HOST': '127.0.0.1',
+        'HOST': 'db',
+        # 'HOST': os.environ.get('POSTGRES_HOST', '127.0.0.1'),
         'PORT': 5432
     }
 }
@@ -151,10 +154,10 @@ SESSION_COOKIE_AGE = 7 * 24 * 60 * 60
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, '/static/')
+STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, '/media/')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
 STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.FileSystemFinder",
@@ -165,7 +168,8 @@ MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
 # REDIS
 
-REDIS_HOST = 'localhost'
+REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+# REDIS_HOST = 'redis'
 REDIS_PORT = 6379
 REDIS_DB = 1
 
@@ -180,7 +184,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/',
+        # 'LOCATION': 'redis://127.0.0.1:6379/',
+        'LOCATION': 'redis://redis:6379/',
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         }
@@ -222,7 +227,7 @@ SOCIALACCOUNT_PROVIDERS = {
             'email',
         ],
         'AUTH_PARAMS': {
-            'access_type': 'online',
+            'access_type': 'offline',
         }
     }
 }
@@ -239,12 +244,18 @@ COUNTRIES_ONLY = ['GB', 'US']
 
 # DEBUG TOOLBAR
 
-INTERNAL_IPS = [
-    '127.0.0.1',
-]
+# INTERNAL_IPS = [
+#     '127.0.0.1',
+# ]
 
 
 # CELERY
 
-CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
-CELERY_BROKER_TRANSPORT = 'redis'
+# CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
+# CELERY_BROKER_TRANSPORT = 'redis'
+
+# CELERY_BROKER_URL = "redis://redis:6379"
+# CELERY_RESULT_BACKEND = "redis://redis:6379"
+
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER', 'redis://127.0.0.1:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_BROKER', 'redis://127.0.0.1:6379/0')
