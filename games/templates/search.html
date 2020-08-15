@@ -10,8 +10,9 @@
         <div class="col-12">
           <div class="table-responsive text-nowrap">
 
-            {% if query %}
               <h1>Search for "{{ query }}"</h1>
+
+            {% if results %}
 
               <div class="lead p-4">
                 <h3>
@@ -31,6 +32,14 @@
                 </div>
 
               {% endfor %}
+
+            {% else %}
+            
+              <div class="lead p-4">
+                <h3>
+                  Found no results
+                </h3>
+              </div>
 
             {% endif %}
 

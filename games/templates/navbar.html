@@ -41,6 +41,7 @@
               aria-haspopup="true" aria-expanded="false">{{ request.user }}</button>
 
             <div class="dropdown-menu dropdown-primary">
+              <a class="dropdown-item" href="{% url 'games:orders-dashboard' %}">My Orders</a>
               <a class="dropdown-item" href="{% url 'account_logout' %}">Sign out</a>
             </div>
           </div>

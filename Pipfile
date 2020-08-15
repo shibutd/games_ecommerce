@@ -13,12 +13,17 @@ django-countries = "*"
 redis = "*"
 django-redis = "*"
 celery = "*"
+django-webpack-loader = "*"
+djangorestframework = "*"
+django-filter = "*"
+django-braces = "*"
 
 [dev-packages]
 django-extensions = "*"
 factory-boy = "*"
 django-debug-toolbar = "*"
 flower = "*"
+coverage = "*"
 
 [requires]
 python_version = "3.7"

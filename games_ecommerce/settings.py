@@ -25,8 +25,13 @@ SECRET_KEY = '3^s*%x^f@0f$pr(n1kc3_(s9+)$76h%_xe8_7m$$c5%y*uy+8h'
 DEBUG = True
 
 # ALLOWED_HOSTS = ['127.0.0.1']
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ")
-
+# ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS")
+# if ALLOWED_HOSTS:
+#     ALLOWED_HOSTS = ALLOWED_HOSTS.split(" ")
+# else:
+#     ALLOWED_HOSTS = ['127.0.0.1']
+ALLOWED_HOSTS = (os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ") if
+                 os.environ.get("DJANGO_ALLOWED_HOSTS") else ['127.0.0.1'])
 
 # Application definition
 
@@ -46,6 +51,9 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google',
     'crispy_forms',
     'django_countries',
+    'webpack_loader',
+    'rest_framework',
+    'django_filters',
 
     'django_extensions',
     # 'debug_toolbar',
@@ -101,17 +109,17 @@ WSGI_APPLICATION = 'games_ecommerce.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
+        # 'NAME': 'postgres',
         # 'NAME': 'games_ecommerce',
-        # 'NAME': os.environ.get('POSTGRES_DB', 'games_ecommerce'),
-        'USER': 'postgres',
-        # 'USER': os.environ.get('POSTGRES_USER', 'postgres'),
+        'NAME': os.environ.get('POSTGRES_DB', 'games_ecommerce'),
+        # 'USER': 'postgres',
+        'USER': os.environ.get('POSTGRES_USER', 'postgres'),
         # 'PASSWORD': 'aMhKuJqhbzLrRe93ypCB',
-        'PASSWORD': 'postgres',
-        # 'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'aMhKuJqhbzLrRe93ypCB'),
+        # 'PASSWORD': 'postgres',
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'aMhKuJqhbzLrRe93ypCB'),
         # 'HOST': '127.0.0.1',
-        'HOST': 'db',
-        # 'HOST': os.environ.get('POSTGRES_HOST', '127.0.0.1'),
+        # 'HOST': 'db',
+        'HOST': os.environ.get('POSTGRES_HOST', '127.0.0.1'),
         'PORT': 5432
     }
 }
@@ -153,8 +161,12 @@ SESSION_COOKIE_AGE = 7 * 24 * 60 * 60
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "assets/"),
+]
+
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles/')
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
@@ -185,7 +197,9 @@ CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
         # 'LOCATION': 'redis://127.0.0.1:6379/',
-        'LOCATION': 'redis://redis:6379/',
+        'LOCATION': 'redis://{}:6379/'.format(REDIS_HOST),
+
+        # 'LOCATION': 'redis://redis:6379/',
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         }
@@ -259,3 +273,24 @@ COUNTRIES_ONLY = ['GB', 'US']
 
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER', 'redis://127.0.0.1:6379/0')
 CELERY_RESULT_BACKEND = os.getenv('CELERY_BROKER', 'redis://127.0.0.1:6379/0')
+
+
+# WEBPACK LOADER
+
+WEBPACK_LOADER = {
+    'DEFAULT': {
+        'BUNDLE_DIR_NAME': 'bundles/',
+        'STATS_FILE': os.path.join(BASE_DIR, 'frontend/webpack-stats.json'),
+    }
+}
+
+
+# REST FRAMEWORK
+
+REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter'
+    )
+}

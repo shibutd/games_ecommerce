@@ -260,13 +260,15 @@ class SearchView(View):
                 ).filter(search=search_query).order_by('-rank')
                 # If serch return no results, check string similarities
                 if not results:
-                    search_similarity = TrigramSimilarity('name', query) \
-                        + TrigramSimilarity('description', query) \
-                        + TrigramSimilarity('tags__name', query)
-                    results = models.Product.objects.annotate(
-                        similarity=search_similarity,
-                    ).filter(similarity__gt=0.2).order_by('-similarity')
-                    print(len(results))
+                    try:
+                        search_similarity = TrigramSimilarity('name', query) \
+                            + TrigramSimilarity('description', query) \
+                            + TrigramSimilarity('tags__name', query)
+                        results = models.Product.objects.annotate(
+                            similarity=search_similarity,
+                        ).filter(similarity__gt=0.2).order_by('-similarity')
+                    except Exception:
+                        results = []
 
                 return render(request, 'search.html', {'form': form,
                                                        'query': query,
@@ -346,26 +348,9 @@ def add_to_cart(request, slug):
     return redirect("games:product", slug=slug)
 
 
-def manage_cart(request):
-    cart = request.cart
-    if not cart or cart.is_empty():
-        return render(request, "cart.html", {"formset": None})
-
-    if request.method == "POST":
-        formset = forms.CartLineFormSet(
-            request.POST, instance=request.cart)
-        if formset.is_valid():
-            formset.save()
-    else:
-        formset = forms.CartLineFormSet(
-            instance=request.cart)
-
-    return render(request, "cart.html", {"formset": formset})
-
-
 def cartline_is_valid(func):
     """
-    Check if product exists in cart.
+    Decorator to check if product exists in cart.
     """
     @wraps(func)
     def wrapper(request, slug, *args, **kwargs):
