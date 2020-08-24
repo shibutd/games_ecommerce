@@ -93,3 +93,33 @@ class TestCacheSignal(TestCase):
         new_product.tags.add(self.tag)
 
         self.assertEqual(cache.get(tag_slug), None)
+
+
+class TestOrderlineStatusSignal(TestCase):
+
+    def test_orderline_change_order_status_after_save(self):
+        order = factories.OrderFactory.create()
+        product = factories.ProductFactory.create()
+        orderline1, orderline2 = factories.OrderLineFactory.create_batch(
+            2, order=order, product=product)
+
+        self.assertEqual(
+            models.OrderLine.objects.filter(status=10).count(), 2)
+        self.assertEqual(
+            models.OrderLine.objects.filter(order=order).count(), 2)
+
+        orderline1.status = 20
+        orderline1.save()
+
+        self.assertEqual(
+            models.OrderLine.objects.filter(status=10).count(), 1)
+        self.assertEqual(
+            models.OrderLine.objects.filter(status=20).count(), 1)
+        self.assertEqual(order.status, 10)
+
+        orderline2.status = 20
+        orderline2.save()
+
+        self.assertEqual(
+            models.OrderLine.objects.filter(status=20).count(), 2)
+        self.assertEqual(order.status, 30)

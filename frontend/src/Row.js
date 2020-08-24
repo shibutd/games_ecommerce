@@ -12,8 +12,8 @@ import TableRow from '@material-ui/core/TableRow';
 import Typography from '@material-ui/core/Typography';
 import KeyboardArrowDownIcon from '@material-ui/icons/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@material-ui/icons/KeyboardArrowUp';
-import { OrderLineStatusSelect } from './SimpleSelect';
-import { UserContext } from "./context";
+import OrderLineStatusSelect from './OrderLineStatusSelect';
+import { useUserStaff } from "./context";
 
 const useRowStyles = makeStyles({
   root: {
@@ -25,7 +25,7 @@ const useRowStyles = makeStyles({
 
 export default function Row(props) {
   const { row } = props;
-  const [isUserStaff] = useContext(UserContext);
+  const isUserStaff = useUserStaff();
   const [open, setOpen] = useState(false);
 
   const classes = useRowStyles();
@@ -73,7 +73,7 @@ export default function Row(props) {
                       <TableCell align='right'>
                         <OrderLineStatusSelect
                           id={lineRow.id.toString()}
-                          order={row.id.toString()}
+                          order_id={row.id.toString()}
                           orderLineStatus={lineRow.status}
                         />
                       </TableCell>)}

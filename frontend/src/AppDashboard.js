@@ -1,17 +1,15 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import Dashboard from './Dashboard';
-import { UserContextProvider, DataContextProvider } from './context';
+import { DashboardContextProvider } from './context';
 
-export default function App() {
+export default function AppDashboard() {
   return (
-    <UserContextProvider>
-      <DataContextProvider>
-       <Dashboard />
-     </DataContextProvider>
-    </UserContextProvider>
+    <DashboardContextProvider>
+      <Dashboard />
+    </DashboardContextProvider>
   );
 }
 
 const container = document.getElementById('react-dashboard');
-ReactDOM.render(<App />, container);
+ReactDOM.render(<AppDashboard />, container);

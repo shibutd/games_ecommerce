@@ -1,6 +1,6 @@
 from rest_framework.serializers import (ModelSerializer, ReadOnlyField,
                                         ChoiceField, DateTimeField)
-from ..models import Order, OrderLine, Cart, CartLine, Product
+from ..models import Order, OrderLine, Cart, CartLine
 
 
 class OrderLineSerializer(ModelSerializer):
@@ -49,48 +49,36 @@ class OrderSerializer(ModelSerializer):
                   'order_lines')
 
 
-# class ProductSerializer(ModelSerializer):
+class CartLineSerializer(ModelSerializer):
+    product_name = ReadOnlyField(
+        source='product.name')
+    product_slug = ReadOnlyField(
+        source='product.slug')
+    price = ReadOnlyField(
+        source='product.price')
+    discount_price = ReadOnlyField(
+        source='product.discount_price')
 
-#     class Meta:
-#         model = Product
-#         fields = ('id',
-#                   'name',
-#                   'slug',
-#                   'price',
-#                   'discount_price')
-
-
-# class CartLineSerializer(ModelSerializer):
-#     product_name = ReadOnlyField(
-#         source='product.name')
-#     product_slug = ReadOnlyField(
-#         source='product.slug')
-#     price = ReadOnlyField(
-#         source='product.price')
-#     discount_price = ReadOnlyField(
-#         source='product.discount_price')
-    # product = ProductSerializer(
-    #     many=True, read_only=True, source='product_set')
-
-    # class Meta:
-    #     model = CartLine
-    #     fields = ('id',
-    #               'product_name',
-    #               'product_slug',
-    #               'price',
-    #               'discount_price',
-    #               'quantity',
-    #               # 'product'
-    #               )
+    class Meta:
+        model = CartLine
+        fields = ('id',
+                  'product_name',
+                  'product_slug',
+                  'price',
+                  'discount_price',
+                  'quantity',
+                  )
 
 
-# class CartSerializer(ModelSerializer):
-#     cart_lines = CartLineSerializer(
-#         many=True,
-#         read_only=True,
-#         source='lines'
-#     )
+class CartSerializer(ModelSerializer):
+    cart_lines = CartLineSerializer(
+        many=True,
+        read_only=True,
+        source='lines'
+    )
 
-#     class Meta:
-#         model = Cart
-#         fields = ('__all__')
+    class Meta:
+        model = Cart
+        fields = ('id',
+                  'coupon',
+                  'cart_lines')

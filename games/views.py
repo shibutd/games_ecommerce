@@ -36,8 +36,7 @@ class HomePageView(ListView):
             # Check cache
             products = cache.get(tag)
             if not products:
-                tag = get_object_or_404(
-                    models.ProductTag, slug=tag)
+                tag = get_object_or_404(models.ProductTag, slug=tag)
                 products = models.Product.objects.in_stock().filter(
                     tags=tag).order_by('name')
                 cache.set(tag, products)

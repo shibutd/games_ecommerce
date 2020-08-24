@@ -16,7 +16,6 @@ celery = "*"
 django-webpack-loader = "*"
 djangorestframework = "*"
 django-filter = "*"
-django-braces = "*"
 
 [dev-packages]
 django-extensions = "*"

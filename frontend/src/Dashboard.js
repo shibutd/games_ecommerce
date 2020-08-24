@@ -7,13 +7,13 @@ import Paper from '@material-ui/core/Paper';
 import CollapsibleTable from './CollapsibleTable';
 import DatePicker from './DatePicker';
 import SearchTextField from './SearchTextField';
-import { OrderStatusSelect } from './SimpleSelect';
-import { orderListURL, IsUserStaffURL } from './constants';
-import { UserContext, DataContext } from "./context";
+import OrderStatusSelect from './OrderStatusSelect';
+import { orderListURL } from './constants';
+import { OrderContext, useUserStaff } from "./context";
 
 export default function Dashboard() {
-  const [isUserStaff, setIsUserStaff] = useContext(UserContext);
-  const [data, setData] = useContext(DataContext);
+  const isUserStaff = useUserStaff();
+  const [data, setData] = useContext(OrderContext);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -27,11 +27,11 @@ export default function Dashboard() {
     const actStatus = (status || '');
     const actFromDate = (fromDate || '');
     const actToDate = (toDate || '');
-    // console.log(page, rowsPerPage, status, fromDate, toDate, searchInput);
 
     const URL = `${orderListURL}?page=${actPage}&page_size=${rowsPerPage}\
 &status=${actStatus}&from_date=${actFromDate}&to_date=${actToDate}\
 &search=${searchInput}&ordering=-date_added`;
+    
     const response = fetch(URL)
       .then(response => {
         return response.json();
@@ -59,24 +59,23 @@ export default function Dashboard() {
     setStatus(statusValue);
   }
 
-  const handleChangeFromDate = (date) => {
+  const convertDate = (date) => {
     const dateDay = date.getDate();
     const dateMonth = date.getMonth() + 1;
     const dateYear = date.getFullYear();
     const dateValue = `${dateYear}-${dateMonth}-${dateDay}`;
 
+    return dateValue;
+  }
+
+  const handleChangeFromDate = (date) => {
     setPage(0);
-    setFromDate(dateValue);
+    setFromDate(convertDate(date));
   }
 
   const handleChangeToDate = (date) => {
-    const dateDay = date.getDate();
-    const dateMonth = date.getMonth() + 1;
-    const dateYear = date.getFullYear();
-    const dateValue = `${dateYear}-${dateMonth}-${dateDay}`;
-
     setPage(0);
-    setToDate(dateValue);
+    setToDate(convertDate(date));
   }
 
   const handleSearch = (event) => {
@@ -85,14 +84,6 @@ export default function Dashboard() {
     setPage(0);
     setSearchInput(input);
   }
-
-  useEffect(() => {
-    // console.log('User useEffect called!')
-    fetch(IsUserStaffURL)
-      .then(response => response.json())
-      .then(data => setIsUserStaff(data.is_staff))
-      .catch(error => console.warn(error));
-  }, [])
 
   useEffect(() => {
     // console.log('Data useEffect called!')

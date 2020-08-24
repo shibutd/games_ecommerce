@@ -18,7 +18,7 @@ export default function CollapsibleTable(props) {
 
   return (
     <TableContainer component={Paper}>
-        { data.count ? (
+      { data.count ? (
         <>
         <Table aria-label="collapsible table">
           <TableHead>
