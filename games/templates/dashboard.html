@@ -1,0 +1,35 @@
+{% extends "_base.html" %}
+{% load render_bundle from webpack_loader %}
+
+{% block head_title %}
+{% if request.user.is_staff %}
+Orders Dashboard
+{% else %}
+My Orders
+{% endif %}
+{% endblock %}
+
+{% block content %}
+<noscript>Unable to show content. Please turn on Javascript.</noscript>
+<main>
+  <div class="container">
+    <section class="mt-4 mb-5">
+      <div class="row wow fadeIn">
+        <div class="col-12">
+          <div class="table-responsive text-nowrap">
+            {% if request.user.is_staff %}
+              <h1>Orders Dashboard</h1>
+            {% else %}
+              <h1>My Orders</h1>
+            {% endif %}
+
+            <div id='react-dashboard'></div>
+            {% render_bundle 'dashboard' %}
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+{% endblock %}
+

@@ -1,0 +1,56 @@
+{% extends "_base.html" %}
+
+{% block head_title %}Search for {{ query }}{% endblock %}
+
+{% block content %}
+<main>
+  <div class="container">
+    <section class="mt-4 mb-5">
+      <div class="row wow fadeIn">
+        <div class="col-12">
+          <div class="table-responsive text-nowrap">
+
+              <h1>Search for "{{ query }}"</h1>
+
+            {% if results %}
+
+              <div class="lead p-4">
+                <h3>
+                {% with results.count as total_results %}
+                  Found {{ total_results }} result{{ total_results|pluralize }}
+                {% endwith %}
+                </h3>
+              </div>
+
+              {% for product in results %}
+
+                <div class="lead pb-4">
+                  <p class="font-weight-bold">
+                    {{ forloop.counter }}. <a href="{{ product.get_absolute_url }}">{{ product.name }}</a>
+                  </p>
+                    {{ product.description|truncatewords_html:10 }}
+                </div>
+
+              {% endfor %}
+
+            {% else %}
+            
+              <div class="lead p-4">
+                <h3>
+                  Found no results
+                </h3>
+              </div>
+
+            {% endif %}
+
+            <div class="lead p-4">
+            <h3>Search again:</h3> {% include "search_form.html" %}
+            </div>
+            
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+{% endblock %}

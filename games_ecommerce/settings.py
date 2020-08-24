@@ -15,7 +15,6 @@ import os
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.0/howto/deployment/checklist/
 
@@ -25,8 +24,14 @@ SECRET_KEY = '3^s*%x^f@0f$pr(n1kc3_(s9+)$76h%_xe8_7m$$c5%y*uy+8h'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
-
+# ALLOWED_HOSTS = ['127.0.0.1']
+# ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS")
+# if ALLOWED_HOSTS:
+#     ALLOWED_HOSTS = ALLOWED_HOSTS.split(" ")
+# else:
+#     ALLOWED_HOSTS = ['127.0.0.1']
+ALLOWED_HOSTS = (os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ") if
+                 os.environ.get("DJANGO_ALLOWED_HOSTS") else ['127.0.0.1'])
 
 # Application definition
 
@@ -38,15 +43,23 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
+    'django.contrib.postgres',
 
-    'django_extensions',
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
     'crispy_forms',
     'django_countries',
+    'webpack_loader',
+    'rest_framework',
+    'django_filters',
+
+    'django_extensions',
+    # 'debug_toolbar',
 
     'games.apps.GamesConfig',
+    # 'games.apps.MyAdminConfig'
 ]
 
 MIDDLEWARE = [
@@ -58,6 +71,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'games.middlewares.cart_middleware',
+    # 'debug_toolbar.middleware.DebugToolbarMiddleware',
 ]
 
 ROOT_URLCONF = 'games_ecommerce.urls'
@@ -73,6 +87,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.media',
             ],
         },
     },
@@ -93,13 +108,18 @@ WSGI_APPLICATION = 'games_ecommerce.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'ENGINE': 'django.db.backends.postgresql',
         # 'NAME': 'postgres',
-        'NAME': 'games_ecommerce',
-
-        'USER': 'postgres',
-        'PASSWORD': 'aMhKuJqhbzLrRe93ypCB',
-        'HOST': '127.0.0.1',
+        # 'NAME': 'games_ecommerce',
+        'NAME': os.environ.get('POSTGRES_DB', 'games_ecommerce'),
+        # 'USER': 'postgres',
+        'USER': os.environ.get('POSTGRES_USER', 'postgres'),
+        # 'PASSWORD': 'aMhKuJqhbzLrRe93ypCB',
+        # 'PASSWORD': 'postgres',
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'aMhKuJqhbzLrRe93ypCB'),
+        # 'HOST': '127.0.0.1',
+        # 'HOST': 'db',
+        'HOST': os.environ.get('POSTGRES_HOST', '127.0.0.1'),
         'PORT': 5432
     }
 }
@@ -136,20 +156,34 @@ USE_L10N = True
 
 USE_TZ = True
 
+SESSION_COOKIE_AGE = 7 * 24 * 60 * 60
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "assets/"),
+]
+
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, '/static/')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles/')
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, '/media/')
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 
 STATICFILES_FINDERS = [
     "django.contrib.staticfiles.finders.FileSystemFinder",
     "django.contrib.staticfiles.finders.AppDirectoriesFinder",
 ]
+
+MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
+
+# REDIS
+
+REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+# REDIS_HOST = 'redis'
+REDIS_PORT = 6379
+REDIS_DB = 1
 
 
 # EMAIL
@@ -157,9 +191,27 @@ STATICFILES_FINDERS = [
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 
-# DJANGO-ALLAUTH
+# CACHE
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        # 'LOCATION': 'redis://127.0.0.1:6379/',
+        'LOCATION': 'redis://{}:6379/'.format(REDIS_HOST),
+
+        # 'LOCATION': 'redis://redis:6379/',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    }
+}
+
+
+# ALLAUTH
 
 AUTH_USER_MODEL = "games.CustomUser"
+
+ACCOUNT_LOGOUT_ON_GET = True
 
 SITE_ID = 1
 
@@ -182,12 +234,63 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'offline',
+        }
+    }
+}
 
-# CRISPY_FORMS
+# CRISPY FORMS
 
 CRISPY_TEMPLATE_PACK = 'bootstrap4'
 
 
-# DJANGO COUNTRIES
+# COUNTRIES
 
-COUNTRIES_ONLY = ['NZ', 'AU']
+COUNTRIES_ONLY = ['GB', 'US']
+
+
+# DEBUG TOOLBAR
+
+# INTERNAL_IPS = [
+#     '127.0.0.1',
+# ]
+
+
+# CELERY
+
+# CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
+# CELERY_BROKER_TRANSPORT = 'redis'
+
+# CELERY_BROKER_URL = "redis://redis:6379"
+# CELERY_RESULT_BACKEND = "redis://redis:6379"
+
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER', 'redis://127.0.0.1:6379/0')
+CELERY_RESULT_BACKEND = os.getenv('CELERY_BROKER', 'redis://127.0.0.1:6379/0')
+
+
+# WEBPACK LOADER
+
+WEBPACK_LOADER = {
+    'DEFAULT': {
+        'BUNDLE_DIR_NAME': 'bundles/',
+        'STATS_FILE': os.path.join(BASE_DIR, 'frontend/webpack-stats.json'),
+    }
+}
+
+
+# REST FRAMEWORK
+
+REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': (
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter'
+    )
+}

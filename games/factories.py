@@ -1,5 +1,6 @@
 from django.conf import settings
-from django.utils.text import slugify
+from django.utils import timezone
+
 import factory
 import factory.fuzzy
 from . import models
@@ -19,24 +20,51 @@ class ProductFactory(factory.django.DjangoModelFactory):
     class Meta:
         model = models.Product
 
-    name = factory.Faker('name')
-    slug = factory.Faker('slug')
+    name = factory.Sequence(lambda n: 'product {}'.format(n))
+    slug = factory.Sequence(lambda n: 'product-{}'.format(n))
     price = factory.fuzzy.FuzzyDecimal(10.0, 100.0, 2)
 
 
-# class AddressFactory(factory.django.DjangoModelFactory):
+class ProductImageFactory(factory.django.DjangoModelFactory):
 
-#     class Meta:
-#         model = models.Address
+    class Meta:
+        model = models.ProductImage
+
+    product = factory.SubFactory(ProductFactory)
+    image = factory.django.ImageField(
+        filename='example.jpg', width=1000, height=1000, color='blue')
+
+class AddressFactory(factory.django.DjangoModelFactory):
+
+    class Meta:
+        model = models.Address
+
+    street_address = factory.Faker('address')
+    zip_code = factory.Sequence(lambda n: '000{}'.format(n))
+    city = factory.Faker('city')
+    country = 'US'
+    address_type = models.Address.SHIPPING
+    is_default = False
 
 
-# class OrderLineFactory(factory.django.DjangoModelFactory):
-#     class Meta:
-#         model = models.OrderLine
+class PaymentFactory(factory.django.DjangoModelFactory):
+
+    class Meta:
+        model = models.Payment
+
+    amount = factory.fuzzy.FuzzyDecimal(10.0, 100.0, 2)
 
 
-# class OrderFactory(factory.django.DjangoModelFactory):
-#     user = factory.SubFactory(UserFactory)
+class OrderLineFactory(factory.django.DjangoModelFactory):
 
-#     class Meta:
-#         model = models.Order
+    class Meta:
+        model = models.OrderLine
+
+
+class OrderFactory(factory.django.DjangoModelFactory):
+
+    class Meta:
+        model = models.Order
+
+    user = factory.SubFactory(UserFactory)
+    payment = factory.SubFactory(PaymentFactory)

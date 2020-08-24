@@ -1,84 +1,125 @@
 import os
 import tempfile
-from decimal import Decimal
 from django.test import TestCase, override_settings
-from django.urls import reverse
-from django.contrib import auth
-from django.core.files.images import ImageFile
+from django.core.cache import cache
 from .. import models, factories
 
 
-class TestSignal(TestCase):
+class TestThumbnailSignal(TestCase):
 
     @override_settings(MEDIA_ROOT=tempfile.gettempdir())
     def test_thumbnails_are_generated_on_save(self):
         # Create product instance
-        product = factories.ProductFactory()
-        image_file = 'games/fixtures/product-sampleimages/Call_of_Duty_MW2.jpg'
-
-        # Create ProductImage instance
-        with open(image_file, 'rb') as f:
-            image = models.ProductImage(
-                product=product,
-                image=ImageFile(f, name="cdmw.jpg"),
-            )
-
-            with self.assertLogs("games", level="INFO") as cm:
-                image.save()
-
-        # Ensure logs was displayed
-        self.assertGreaterEqual(len(cm.output), 1)
-
-        image.refresh_from_db()
-
+        filename = 'example.jpg'
+        productimage = factories.ProductImageFactory.create(
+            image__name=filename)
+        productimage.refresh_from_db()
         # Ensure saved thumbnail is thumbnail of ProductImage
         storage_path = os.path.join(tempfile.gettempdir(),
                                     'product-thumbnails',
-                                    'cdmw.jpg')
+                                    filename)
+
         with open(storage_path, "rb") as f:
             expected_content = f.read()
-            assert image.thumbnail.read() == expected_content
+            self.assertEqual(productimage.thumbnail.read(),
+                             expected_content)
 
-        # image.thumbnail.delete(save=False)
-        # image.image.delete(save=False)
+        productimage.thumbnail.delete(save=False)
+        productimage.image.delete(save=False)
 
-    def test_add_to_cart_login_merge_works(self):
-        user1 = factories.UserFactory()
-        product1, product2 = factories.ProductFactory.create_batch(2)
+class TestCacheSignal(TestCase):
 
-        # user1 = models.User.objects.create_user(
-        #     "user1@a.com", "pw432joij")
+    def setUp(self):
+        cache.clear()
+        self.product = factories.ProductFactory.create()
+        self.tag = models.ProductTag.objects.create(
+            name='Playstation 4', slug='playstation-4')
+        self.product.tags.add(self.tag)
 
-        # cb = models.Product.objects.create(
-        #     name="The cathedral and the bazaar",
-        #     slug="cathedral-bazaar",
-        #     price=Decimal("10.00"),
-        # )
-        # w = models.Product.objects.create(
-        #     name="Microsoft Windows guide",
-        #     slug="microsoft-windows-guide",
-        #     price=Decimal("12.00"),
-        # )
+        cache.set(self.tag.slug, 25)
+        cache.set('all_tags', 26)
+        cache.set('all_products', 28)
 
-        cart = models.Cart.objects.create(user=user1)
-        models.CartLine.objects.create(
-            cart=cart, product=product1, quantity=2)
+    def tearDown(self):
+        cache.clear()
 
-        response = self.client.get(
-            reverse("games:add-to-cart", kwargs={"slug": product1.slug}))
-        self.assertEqual(response.status_code, 302)
+    def test_producttag_cache_clear_on_delete(self):
+        tag_slug = self.tag.slug
 
-        self.client.force_login(user1)
+        self.assertEqual(cache.get(tag_slug), 25)
+        self.assertEqual(cache.get('all_tags'), 26)
 
-        response = self.client.post(
-            reverse("account_login"),
-            {"email": user1.email, "password": ""},
-        )
-        self.assertEqual(response.status_code, 302)
-        self.assertTrue(
-            auth.get_user(self.client).is_authenticated)
-        self.assertTrue(
-            models.Cart.objects.filter(user=user1).exists())
+        self.tag.delete()
 
-        cart = models.Cart.objects.get(user=user1)
-        self.assertEquals(cart.count(), 3)
+        self.assertEqual(cache.get(tag_slug), None)
+        self.assertEqual(cache.get('all_tags'), None)
+
+    def test_producttag_cache_clear_on_save(self):
+        self.assertEqual(cache.get('all_tags'), 26)
+
+        models.ProductTag.objects.create(
+            name='Playstation 5', slug='playstation-5')
+
+        self.assertEqual(cache.get('all_tags'), None)
+
+    def test_product_cache_clear_on_delete(self):
+        tag_slug = self.tag.slug
+
+        self.assertEqual(cache.get(tag_slug), 25)
+        self.assertEqual(cache.get('all_products'), 28)
+
+        self.product.delete()
+
+        self.assertEqual(cache.get(tag_slug), None)
+        self.assertEqual(cache.get('all_products'), None)
+
+    def test_product_cache_clear_on_save(self):
+        tag_slug = self.tag.slug
+
+        self.assertEqual(cache.get(tag_slug), 25)
+        self.assertEqual(cache.get('all_products'), 28)
+
+        factories.ProductFactory.create()
+
+        self.assertEqual(cache.get('all_products'), None)
+
+    def test_product_cache_clear_on_m2m_changed(self):
+        tag_slug = self.tag.slug
+
+        self.assertEqual(cache.get(tag_slug), 25)
+        self.assertEqual(cache.get('all_products'), 28)
+
+        new_product = factories.ProductFactory.create()
+        new_product.tags.add(self.tag)
+
+        self.assertEqual(cache.get(tag_slug), None)
+
+
+class TestOrderlineStatusSignal(TestCase):
+
+    def test_orderline_change_order_status_after_save(self):
+        order = factories.OrderFactory.create()
+        product = factories.ProductFactory.create()
+        orderline1, orderline2 = factories.OrderLineFactory.create_batch(
+            2, order=order, product=product)
+
+        self.assertEqual(
+            models.OrderLine.objects.filter(status=10).count(), 2)
+        self.assertEqual(
+            models.OrderLine.objects.filter(order=order).count(), 2)
+
+        orderline1.status = 20
+        orderline1.save()
+
+        self.assertEqual(
+            models.OrderLine.objects.filter(status=10).count(), 1)
+        self.assertEqual(
+            models.OrderLine.objects.filter(status=20).count(), 1)
+        self.assertEqual(order.status, 10)
+
+        orderline2.status = 20
+        orderline2.save()
+
+        self.assertEqual(
+            models.OrderLine.objects.filter(status=20).count(), 2)
+        self.assertEqual(order.status, 30)

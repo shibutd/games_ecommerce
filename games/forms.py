@@ -1,8 +1,9 @@
 import logging
 from django import forms
-from django.core.mail import send_mail
 from django.forms import inlineformset_factory
+from django_countries.widgets import CountrySelectWidget
 from . import models
+from .tasks import contact_us_form_filled
 
 
 logger = logging.getLogger(__name__)
@@ -25,15 +26,60 @@ class ContactUsForm(forms.Form):
 
     def send_mail(self):
         logger.info("Sending email to customer service")
+        contact_us_form_filled.delay(self.cleaned_data)
 
-        message = "From: {0}\n{1}".format(
-            self.cleaned_data["name"],
-            self.cleaned_data["message"],
-        )
-        send_mail(
-            "Message from contact-us form",
-            message,
-            "site@games4everyone.com",
-            ["customerservice@games4everyone.com"],
-            fail_silently=False,
-        )
+
+class AddressForm(forms.ModelForm):
+    use_default = forms.BooleanField(initial=False, required=False)
+
+    class Meta:
+        model = models.Address
+        exclude = ['user', 'address_type']
+        labels = {
+            'street_address': 'Address',
+            'apartment_address': 'Address 2 (optional)',
+            'is_default': 'Save as default',
+        }
+        widgets = {
+            'street_address': forms.TextInput(
+                attrs={'placeholder': '1234 Main St'}),
+            'apartment_address': forms.TextInput(
+                attrs={'placeholder': 'Apartment or Suite'}),
+            'country': CountrySelectWidget(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            self.fields[field].required = False
+        self.fields['use_default'].label = 'Use my default address:'
+
+    def validate_input(self, values):
+        for field in values:
+            if field == '':
+                return False
+        return True
+
+
+class CouponForm(forms.ModelForm):
+
+    class Meta:
+        model = models.Coupon
+        fields = ['code']
+        labels = {'code': ''}
+
+        widgets = {'code': forms.TextInput(
+            attrs={'placeholder': 'Promo code'})
+        }
+
+
+class SearchForm(forms.Form):
+    query = forms.CharField()
+
+
+class PeriodSelectForm(forms.Form):
+    PERIODS = ((30, "30 days"),
+               (60, "60 days"),
+               (90, "90 days"))
+    period = forms.TypedChoiceField(
+        choices=PERIODS, coerce=int, required=True)

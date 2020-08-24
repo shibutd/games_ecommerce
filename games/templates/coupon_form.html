@@ -1,0 +1,7 @@
+{% load crispy_forms_tags %}
+
+<form class="card p-2" method="post" action="{% url "games:add-coupon" %}">
+  {% csrf_token %}
+  {{ couponform.code|as_crispy_field }}
+  <button class="btn btn-secondary btn-md waves-effect m-0" type="submit">Activate</button>
+</form>

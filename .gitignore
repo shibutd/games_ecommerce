@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Ignore redis binary dump (dump.rdb) files
+*.rdb
+
 # C extensions
 *.so
 
@@ -24,6 +27,9 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+
+# Javascript
+node_modules/
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
