@@ -2,17 +2,17 @@ import logging
 import random
 from functools import wraps
 from django.contrib import messages
-from django.shortcuts import render, redirect, get_object_or_404, resolve_url
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
-from django.views.generic import ListView, DetailView, FormView
+from django.views.generic import ListView, DetailView, FormView, TemplateView
 from django.views.generic.base import View
-from django.contrib.auth.mixins import AccessMixin
 from django.contrib.auth.views import redirect_to_login
 from django.contrib.postgres.search import (SearchVector, SearchQuery,
                                             SearchRank, TrigramSimilarity)
 from django.core.cache import cache
 from django.db import transaction
 from . import forms, models
+from .mixins import LoggedOpenCartExistsMixin, IsStaffMixin
 from .recommender import Recommender
 from .tasks import order_created
 
@@ -93,28 +93,6 @@ class ContactUsView(FormView):
     def form_valid(self, form):
         form.send_mail()
         return super().form_valid(form)
-
-
-class LoggedOpenCartExistsMixin(AccessMixin):
-    """
-    Deny access to unauthenticated user and user without OPEN cart.
-    """
-    permission_denied_message = 'Your cart is empty.'
-
-    def handle_no_permission(self):
-        messages.warning(self.request, self.permission_denied_message)
-        return redirect('games:home')
-
-    def dispatch(self, request, *args, **kwargs):
-        # This will redirect to the login view
-        if not request.user.is_authenticated:
-            return redirect_to_login(request.get_full_path(),
-                                     resolve_url(self.get_login_url()),
-                                     self.get_redirect_field_name())
-        if not request.cart:
-            return self.handle_no_permission()
-
-        return super().dispatch(request, *args, **kwargs)
 
 
 class OrderSummaryView(View):
@@ -296,11 +274,11 @@ class PaymentView(View):
         order.payment = payment
         order.status = models.Order.PAID
         order.save()
-        # Send e-mail to the customer
         # Delete cart
         del self.request.session['cart_id']
         cart.delete()
 
+        # Send e-mail to the customer
         transaction.on_commit(lambda: order_created.delay(order.id))
         messages.success(request, 'Your order was successfully paid!')
         return redirect('games:home')
@@ -319,6 +297,14 @@ class PaymentView(View):
             return redirect('games:checkout')
 
         return super().dispatch(request, *args, **kwargs)
+
+
+class OrdersPerDayView(IsStaffMixin, TemplateView):
+    template_name = 'orders_per_day.html'
+
+
+class MostBoughtProductsView(IsStaffMixin, TemplateView):
+    template_name = 'most_bought_products.html'
 
 
 def add_to_cart(request, slug):

@@ -41,9 +41,16 @@
               aria-haspopup="true" aria-expanded="false">{{ request.user }}</button>
 
             <div class="dropdown-menu dropdown-primary">
-              <a class="dropdown-item" href="{% url 'games:orders-dashboard' %}">My Orders</a>
+            {% if request.user.is_staff %}
+              <a class="dropdown-item" href="{% url 'games:order-dashboard' %}">Dashboard</a>
+              <a class="dropdown-item" href="{% url 'games:orders-per-day' %}">Orders per Day</a>
+              <a class="dropdown-item" href="{% url 'games:most-bought-products' %}">Most Bought Products</a>
+            {% else %}
+              <a class="dropdown-item" href="{% url 'games:order-dashboard' %}">My Orders</a>
+            {% endif %}
               <a class="dropdown-item" href="{% url 'account_logout' %}">Sign out</a>
             </div>
+
           </div>
 
         {% else %}

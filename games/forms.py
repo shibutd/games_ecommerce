@@ -75,11 +75,3 @@ class CouponForm(forms.ModelForm):
 
 class SearchForm(forms.Form):
     query = forms.CharField()
-
-
-class PeriodSelectForm(forms.Form):
-    PERIODS = ((30, "30 days"),
-               (60, "60 days"),
-               (90, "90 days"))
-    period = forms.TypedChoiceField(
-        choices=PERIODS, coerce=int, required=True)

@@ -13,6 +13,10 @@ export const orderLineUpdateURL = `${endpoint}/order-lines/`;
 
 export const cartListURL = `${endpoint}/carts/`;
 
+export const ordersPerDayURL = `${apiURL}/orders-per-day/`;
+
+export const mostBoughtProductsURL = `${apiURL}/most-bought-products/`;
+
 export const addToCartURL = `${endpoint}/add-to-cart/`;
 
 export const removeSingleFromCartURL = `${endpoint}/remove-single-from-cart/`;

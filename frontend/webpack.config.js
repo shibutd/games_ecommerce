@@ -6,6 +6,8 @@ module.exports = {
     context: __dirname,
     entry: {
         dashboard: './src/AppDashboard.js',
+        orders_per_day: './src/AppOrdersPerDay.js',
+        most_bought_products: './src/AppMostBoughtProducts.js',
     },
     output: {
         filename: '[name].js',

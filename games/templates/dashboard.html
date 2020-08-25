@@ -1,9 +1,13 @@
 {% extends "_base.html" %}
 {% load render_bundle from webpack_loader %}
 
+{% block extra_head %}
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
+{% endblock %}
+
 {% block head_title %}
 {% if request.user.is_staff %}
-Orders Dashboard
+Order Dashboard
 {% else %}
 My Orders
 {% endif %}
@@ -18,7 +22,7 @@ My Orders
         <div class="col-12">
           <div class="table-responsive text-nowrap">
             {% if request.user.is_staff %}
-              <h1>Orders Dashboard</h1>
+              <h1>Order Dashboard</h1>
             {% else %}
               <h1>My Orders</h1>
             {% endif %}

@@ -14,7 +14,6 @@ from allauth.socialaccount.models import (SocialApp, SocialAccount,
                                           SocialToken)
 from .models import (CustomUser, Address, Product, ProductTag,
                      Order, OrderLine, ProductImage, Payment, Coupon)
-from .forms import PeriodSelectForm
 
 logger = logging.getLogger(__name__)
 
@@ -156,88 +155,7 @@ class AddressAdmin(admin.ModelAdmin):
     search_fields = ['user__email', 'street_address', 'city']
 
 
-class ReportingAdminSite:
-    def get_urls(self):
-        urls = super().get_urls()
-        my_urls = [
-            path('orders_per_day/',
-                 self.admin_view(self.orders_per_day),
-                 name='orders-per-day'),
-            path('most_bought_products/',
-                 self.admin_view(self.most_bought_products),
-                 name='most-bought-products'),
-        ]
-        return my_urls + urls
-
-    def orders_per_day(self, request):
-        starting_day = timezone.now() - timedelta(days=180)
-        order_data = (Order.objects.filter(
-            Q(status=Order.PAID) & Q(payment__date_paid__gt=starting_day))
-            .annotate(day=TruncDay('payment__date_paid'))
-            .values('day')
-            .annotate(c=Count('id'))
-        )
-        labels = [
-            x['day'].strftime('%Y-%m-%d') for x in order_data]
-
-        values = [x['c'] for x in order_data]
-
-        context = dict(
-            self.each_context(request),
-            title='Orders per day',
-            labels=labels,
-            values=values,
-        )
-        return TemplateResponse(
-            request, 'orders_per_day.html', context)
-
-    def most_bought_products(self, request):
-        if request.method == 'POST':
-            form = PeriodSelectForm(request.POST)
-            if form.is_valid():
-                days = form.cleaned_data['period']
-                starting_day = timezone.now() - timedelta(days=days)
-                data = (OrderLine.objects.filter(
-                    Q(order__status=Order.PAID) & Q(
-                        order__date_added__gt=starting_day))
-                    .values('product__name')
-                    .annotate(c=Count('id'))
-                )
-                labels = [x['product__name'] for x in data]
-                values = [x['c'] for x in data]
-        else:
-            form = PeriodSelectForm()
-            labels = None
-            values = None
-
-        context = dict(
-            self.each_context(request),
-            title='Most bought products',
-            form=form,
-            labels=labels,
-            values=values,
-        )
-        return TemplateResponse(
-            request, 'most_bought_products.html', context)
-
-    def index(self, request, extra_context=None):
-        reporting_pages = [
-            {
-                'name': 'Orders per day',
-                'link': 'orders_per_day/',
-            },
-            {
-                'name': 'Most bought products',
-                'link': 'most_bought_products/',
-            },
-        ]
-        if not extra_context:
-            extra_context = {}
-        extra_context = {'reporting_pages': reporting_pages}
-        return super().index(request, extra_context)
-
-
-class MyAdminSite(ReportingAdminSite, admin.AdminSite):
+class MyAdminSite(admin.AdminSite):
     site_header = 'Games4Everyone administration'
     site_header_color = 'black'
     module_caption_color = 'grey'

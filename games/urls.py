@@ -15,8 +15,6 @@ urlpatterns = [
     path('contact-us/', views.ContactUsView.as_view(),
          name='contact-us'),
     path('search/', views.SearchView.as_view(), name='search'),
-    path('order-dashboard/', TemplateView.as_view(template_name='dashboard.html'),
-         name='orders-dashboard'),
     path('order-summary/', views.OrderSummaryView.as_view(),
          name='order-summary'),
     path('checkout/', views.CheckoutView.as_view(), name='checkout'),
@@ -25,12 +23,22 @@ urlpatterns = [
     path('payment/', views.PaymentView.as_view(),
          name='payment'),
 
+    # Admin urls
+    path('order-dashboard/',
+         TemplateView.as_view(template_name='dashboard.html'),
+         name='order-dashboard'),
+    path('orders-per-day/', views.OrdersPerDayView.as_view(),
+         name='orders-per-day'),
+    path('most-bought-products/', views.MostBoughtProductsView.as_view(),
+         name='most-bought-products'),
+
+    # Cart management urls
     path('add_to_cart/<slug>', views.add_to_cart, name='add-to-cart'),
     path('remove_single_from_cart/<slug>', views.remove_single_from_cart,
          name='remove-single-from-cart'),
     path('remove_from_cart/<slug>', views.remove_from_cart,
          name='remove-from-cart'),
 
+    # API
     path('api/', include('games.api.urls')),
-
 ]

@@ -140,9 +140,10 @@ def product_m2m_changed_cache_clear(sender, instance, **kwargs):
 def orderline_pre_save_change_order_status(sender, instance, **kwargs):
     """Change status of order to 'Done' if it's each OrderLine processed.
     """
-    orderline = models.OrderLine.objects.select_related(
-        'order').prefetch_related('order__lines').get(pk=instance.pk)
-    order = orderline.order
-    if all(line.status > 10 for line in order.lines.all()):
-        instance.order.status = 30
-        instance.order.save()
+    if instance.status > 10:
+        orderline = models.OrderLine.objects.select_related(
+            'order').prefetch_related('order__lines').get(pk=instance.pk)
+        order = orderline.order
+        if all(line.status > 10 for line in order.lines.all()):
+            instance.order.status = 30
+            instance.order.save()

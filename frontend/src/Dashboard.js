@@ -87,6 +87,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     // console.log('Data useEffect called!')
+    // setLoading(true);
     fetchAPI()
       .then(resp => {
         setData(resp);
