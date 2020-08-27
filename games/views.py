@@ -4,7 +4,7 @@ from functools import wraps
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse_lazy
-from django.views.generic import ListView, DetailView, FormView, TemplateView
+from django.views.generic import ListView, FormView, TemplateView
 from django.views.generic.base import View
 from django.contrib.auth.views import redirect_to_login
 from django.contrib.postgres.search import (SearchVector, SearchQuery,
@@ -13,13 +13,12 @@ from django.core.cache import cache
 from django.db import transaction
 from django.db.models.functions import Greatest
 from . import forms, models
-from .mixins import LoggedOpenCartExistsMixin, IsStaffMixin
+from .mixins import LoggedOpenCartExistsMixin, IsStaffMixin, CartContextMixin
 from .recommender import Recommender
 from .tasks import order_created
 
 
 logger = logging.getLogger(__name__)
-
 
 r = Recommender()
 
@@ -77,6 +76,7 @@ class ProductDetailView(View):
 
     def get(self, request, slug, *args, **kwargs):
         context = {}
+
         products = models.Product.objects.prefetch_related(
             'images', 'tags').order_by('name')
         product = products.get(slug=slug)
@@ -110,33 +110,38 @@ class ContactUsView(FormView):
         return super().form_valid(form)
 
 
-class OrderSummaryView(View):
+class OrderSummaryView(CartContextMixin, View):
     """
     Manage products in cart.
     """
 
     def get(self, request, *args, **kwargs):
-        return render(request, 'order_summary.html', {'cart': request.cart})
+        context = self.get_context_data()
+        return render(request, 'order_summary.html', context)
 
 
-class CheckoutView(LoggedOpenCartExistsMixin, View):
+class CheckoutView(LoggedOpenCartExistsMixin, CartContextMixin, View):
     """
-    Enter shipping and billing addresses and applying coupons.
+    Enter shipping, billing addresses and applying coupons.
     """
 
     def get(self, request, *args, **kwargs):
+        context = self.get_context_data()
+
         shipping_form = forms.AddressForm(prefix='shipping')
         billing_form = forms.AddressForm(prefix='billing')
         couponform = forms.CouponForm(prefix='coupon')
 
-        context = {'shipping_form': shipping_form,
-                   'billing_form': billing_form,
-                   'couponform': couponform}
+        context.update({'shipping_form': shipping_form,
+                        'billing_form': billing_form,
+                        'couponform': couponform})
 
-        for address in [{'name': 'shipping_address',
-                         'type': models.Address.SHIPPING},
-                        {'name': 'billing_address',
-                         'type': models.Address.BILLING}]:
+        address_types = [{'name': 'shipping_address',
+                          'type': models.Address.SHIPPING},
+                         {'name': 'billing_address',
+                          'type': models.Address.BILLING}]
+
+        for address in address_types:
             default_address, exists = self.get_default_address_if_exists(
                 address['type'])
             if exists:
@@ -266,13 +271,14 @@ class SearchView(View):
         return redirect('games:home')
 
 
-class PaymentView(View):
+class PaymentView(CartContextMixin, View):
     """
     Display payment form and process payment.
     """
 
     def get(self, request, *args, **kwargs):
-        return render(request, 'payment.html')
+        context = self.get_context_data()
+        return render(request, 'payment.html', context)
 
     @transaction.atomic
     def post(self, request, *args, **kwargs):
@@ -313,10 +319,16 @@ class PaymentView(View):
 
 
 class OrdersPerDayView(IsStaffMixin, TemplateView):
+    """
+    Admin panel for monitoring number of paid orders by day.
+    """
     template_name = 'orders_per_day.html'
 
 
 class MostBoughtProductsView(IsStaffMixin, TemplateView):
+    """
+    Admin panel for monitoring most bought products.
+    """
     template_name = 'most_bought_products.html'
 
 

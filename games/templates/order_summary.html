@@ -1,4 +1,5 @@
 {% extends "_base.html" %}
+{% load cart_template_tags %}
 
 {% block head_title %}Order Summary{% endblock %}
 
@@ -24,36 +25,40 @@
               </thead>
 
               <tbody>
-              {% if cart and not cart.is_empty %}
+              {% with cart_id|related_with_lines as cart %}
 
-                {% for cart_line in cart.lines.all %}
-                <tr>
-                  <th scope="row">{{ forloop.counter }}</th>
-                  <td>{{ cart_line.product.name }}</td>
-                  <td>
-                    {% if cart_line.product.discount_price %}
-                      <del>$ {{ cart_line.product.price }}</del>
-                      $ {{ cart_line.product.discount_price }}
-                    {% else %}
-                      $ {{ cart_line.product.price }}
-                    {% endif %}
-                  </td>
-                  <td>
-                    <a href={% url 'games:remove-single-from-cart' cart_line.product.slug %}><i class="fas fa-minus pr-2"></i></a>
-                    {{ cart_line.quantity }}
-                    <a href={% url 'games:add-to-cart' cart_line.product.slug %}><i class="fas fa-plus pl-2"></i></a>
-                  </td>
-                  <td>
-                    $ {{ cart_line.get_total_product_price }}
-                    {% if cart_line.product.discount_price %}
-                      <span class="badge badge-danger ml-2">SALE</span>
-                    {% endif %}
 
-                    <a href={% url 'games:remove-from-cart' cart_line.product.slug %}><i class="fas fa-trash float-right"></i></a>
-                    
-                  </td>
-                </tr>
-                {% endfor %}
+                {% if cart and not cart.is_empty %}
+                  
+
+                  {% for cart_line in cart.lines.all %}
+                  <tr>
+                    <th scope="row">{{ forloop.counter }}</th>
+                    <td>{{ cart_line.product.name }}</td>
+                    <td>
+                      {% if cart_line.product.discount_price %}
+                        <del>$ {{ cart_line.product.price }}</del>
+                        $ {{ cart_line.product.discount_price }}
+                      {% else %}
+                        $ {{ cart_line.product.price }}
+                      {% endif %}
+                    </td>
+                    <td>
+                      <a href={% url 'games:remove-single-from-cart' cart_line.product.slug %}><i class="fas fa-minus pr-2"></i></a>
+                      {{ cart_line.quantity }}
+                      <a href={% url 'games:add-to-cart' cart_line.product.slug %}><i class="fas fa-plus pl-2"></i></a>
+                    </td>
+                    <td>
+                      $ {{ cart_line.get_total_product_price }}
+                      {% if cart_line.product.discount_price %}
+                        <span class="badge badge-danger ml-2">SALE</span>
+                      {% endif %}
+
+                      <a href={% url 'games:remove-from-cart' cart_line.product.slug %}><i class="fas fa-trash float-right"></i></a>
+                      
+                    </td>
+                  </tr>
+                  {% endfor %}
 
                   {% if cart.get_total %}
 
@@ -80,10 +85,15 @@
 
                   {% endif %}
 
+
                 {% else %}
 
                   <tr>
-                    <td colspan="5"><h4><b>Your cart is empty :(</b></h4></td>
+                    <td colspan="5">
+                      <div class='d-flex justify-content-center h4'>
+                        Your cart is empty :(
+                      </div>
+                    </td>
                   </tr>
                   <tr>
                     <td colspan="5">
@@ -91,7 +101,10 @@
                     </td>
                   </tr>
 
-              {% endif %}
+                {% endif %}
+
+              {% endwith %}
+
               </tbody>
 
             </table>

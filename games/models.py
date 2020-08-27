@@ -173,12 +173,9 @@ class Cart(models.Model):
     def count(self):
         return sum(i.quantity for i in self.lines.all())
 
-    def lines_with_products(self):
-        return self.lines.select_related('product')
-
     def get_total(self):
         total = 0
-        for cart_line in self.lines.select_related('product'):
+        for cart_line in self.lines.all():
             total += cart_line.get_total_product_price()
         if self.coupon:
             total -= self.coupon.amount

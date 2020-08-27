@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import AccessMixin
 from django.contrib.auth.views import redirect_to_login
 from django.shortcuts import redirect, resolve_url
+from django.views.generic.base import ContextMixin
 
 
 class LoggedOpenCartExistsMixin(AccessMixin):
@@ -40,3 +41,15 @@ class IsStaffMixin(AccessMixin):
             return self.handle_no_permission()
 
         return super().dispatch(request, *args, **kwargs)
+
+
+class CartContextMixin(ContextMixin):
+    """
+    Add 'cart_id' to context
+    """
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        cart_id = self.request.session.get('cart_id')
+        context['cart_id'] = cart_id
+        return context
