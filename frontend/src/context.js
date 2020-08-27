@@ -15,7 +15,6 @@ export const DashboardContextProvider = props => {
   const [data, setData] = useState([]);
 
   useEffect(() => {
-    console.log('User useEffect called!')
     fetch(IsUserStaffURL)
       .then(response => response.json())
       .then(data => setIsUserStaff(data.is_staff))

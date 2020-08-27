@@ -25,11 +25,16 @@ export default function AppMostBoughtProducts() {
   }
 
   useEffect(() => {
+    const abortController = new AbortController();
+
     const fetchData = async (days) => {
       const url = `${mostBoughtProductsURL}${days}`;
 
       try {
-        const response = await fetch(url)
+        const response = await fetch(
+          url,
+          { signal: abortController.signal }
+        )
 
         if (!response.ok) {
           throw new Error(
@@ -49,6 +54,10 @@ export default function AppMostBoughtProducts() {
 
     setLoading(true);
     fetchData(period);
+
+    return () => {
+      abortController.abort();
+    };
   }, [period]);
 
   return (

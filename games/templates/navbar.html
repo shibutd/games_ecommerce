@@ -1,5 +1,7 @@
 {% load cart_template_tags %}
 
+{% with request.user as user %}
+
 <nav class="navbar fixed-top navbar-expand-lg navbar-light white scrolling-navbar">
   <div class="container">
 
@@ -33,15 +35,15 @@
 
       <ul class="navbar-nav nav-flex-icons">
         
-        {% if request.user.is_authenticated %}
+        {% if user.is_authenticated %}
 
           <div class="dropdown">
 
             <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown"
-              aria-haspopup="true" aria-expanded="false">{{ request.user }}</button>
+              aria-haspopup="true" aria-expanded="false">{{ user }}</button>
 
             <div class="dropdown-menu dropdown-primary">
-            {% if request.user.is_staff %}
+            {% if user.is_staff %}
               <a class="dropdown-item" href="{% url 'games:order-dashboard' %}">Dashboard</a>
               <a class="dropdown-item" href="{% url 'games:orders-per-day' %}">Orders per Day</a>
               <a class="dropdown-item" href="{% url 'games:most-bought-products' %}">Most Bought Products</a>
@@ -67,16 +69,25 @@
 
           <li class="nav-item">
             <a href="{% url 'games:order-summary' %}" class="nav-link waves-effect">
-              {% if request|cart_item_count %}
-              <span class="badge red z-depth-1 mr-1"> {{ request|cart_item_count }} </span>
-              {% endif %}
-              <i class="fas fa-shopping-cart"></i>
-              <span class="clearfix d-none d-sm-inline-block"> Cart </span>
+
+              {% with request|cart_item_count as cart_count %}
+                  
+                {% if cart_count %}
+                  <span class="badge red z-depth-1 mr-1"> {{ cart_count }} </span>
+                {% endif %}
+                <i class="fas fa-shopping-cart"></i>
+                <span class="clearfix d-none d-sm-inline-block"> Cart </span>
+
+              {% endwith %}
+              
             </a>
           </li>
+
 
       </ul>
 
     </div>
   </div>
 </nav>
+
+{% endwith %}

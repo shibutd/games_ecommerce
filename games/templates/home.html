@@ -47,7 +47,7 @@
 
             <div class="view overlay">
               
-              <img src="{{ product.images.first.thumbnail.url }}" class="card-img-top">
+              <img src="{{ product.images.all.0.thumbnail.url }}" class="card-img-top">
               <a href="{{ product.get_absolute_url }}">
                 <div class="mask rgba-white-slight"></div>
               </a>

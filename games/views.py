@@ -11,6 +11,7 @@ from django.contrib.postgres.search import (SearchVector, SearchQuery,
                                             SearchRank, TrigramSimilarity)
 from django.core.cache import cache
 from django.db import transaction
+from django.db.models.functions import Greatest
 from . import forms, models
 from .mixins import LoggedOpenCartExistsMixin, IsStaffMixin
 from .recommender import Recommender
@@ -18,6 +19,9 @@ from .tasks import order_created
 
 
 logger = logging.getLogger(__name__)
+
+
+r = Recommender()
 
 
 class HomePageView(ListView):
@@ -37,14 +41,16 @@ class HomePageView(ListView):
             products = cache.get(tag)
             if not products:
                 tag = get_object_or_404(models.ProductTag, slug=tag)
-                products = models.Product.objects.in_stock().filter(
-                    tags=tag).order_by('name')
+                products = self.model.objects.in_stock().prefetch_related(
+                    'images').filter(tags=tag).order_by('name')
                 cache.set(tag, products)
         # Otherwise return all in stock products
         else:
             products = cache.get('all_products')
+
             if not products:
-                products = models.Product.objects.in_stock().order_by('name')
+                products = self.model.objects.in_stock().prefetch_related(
+                    'images').order_by('name')
             cache.set('all_products', products)
 
         return products
@@ -54,32 +60,41 @@ class HomePageView(ListView):
         context = super().get_context_data(**kwargs)
         # Check cache
         tags = cache.get('all_tags')
+
         if not tags:
             tags = list(models.ProductTag.objects.values_list(
                 'name', 'slug'))
             cache.set('all_tags', tags)
         context['tags'] = random.sample(tags, k=min(5, len(tags)))
+
         return context
 
 
-class ProductDetailView(DetailView):
+class ProductDetailView(View):
     """
     Display product's details.
     """
-    template_name = 'product_detail.html'
-    model = models.Product
-    context_object_name = 'product'
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        r = Recommender()
-        product = self.get_object()
-        suggested_products = r.suggest_products(product)
+    def get(self, request, slug, *args, **kwargs):
+        context = {}
+        products = models.Product.objects.prefetch_related(
+            'images', 'tags').order_by('name')
+        product = products.get(slug=slug)
+        context['product'] = product
+
+        num_of_suggested = 3
+        suggested_products = r.suggest_products(product, num_of_suggested)
+
         if not suggested_products:
-            suggested_products = random.choices(
-                models.Product.objects.all(), k=3)
+            products = models.Product.objects.prefetch_related('images')
+            suggested_products = random.sample(
+                list(products),
+                k=min(num_of_suggested, len(products))
+            )
+
         context['suggested_products'] = suggested_products
-        return context
+
+        return render(request, 'product_detail.html', context)
 
 
 class ContactUsView(FormView):
@@ -236,16 +251,14 @@ class SearchView(View):
                     rank=SearchRank(search_vector, search_query)
                 ).filter(search=search_query).order_by('-rank')
                 # If serch return no results, check string similarities
-                if not results:
-                    try:
-                        search_similarity = TrigramSimilarity('name', query) \
-                            + TrigramSimilarity('description', query) \
-                            + TrigramSimilarity('tags__name', query)
-                        results = models.Product.objects.annotate(
-                            similarity=search_similarity,
-                        ).filter(similarity__gt=0.2).order_by('-similarity')
-                    except Exception:
-                        results = []
+                if len(results) == 0:
+                    search_similarity = Greatest(
+                        TrigramSimilarity('name', query),
+                        TrigramSimilarity('description', query),
+                    )
+                    results = models.Product.objects.annotate(
+                        similarity=search_similarity
+                    ).filter(similarity__gt=0.2).order_by('-similarity')
 
                 return render(request, 'search.html', {'form': form,
                                                        'query': query,

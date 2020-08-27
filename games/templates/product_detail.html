@@ -1,6 +1,5 @@
 {% extends "_base.html" %}
 {% load cache %}
-{% load render_bundle from webpack_loader %}
 
 {% block head_title %}{{ product.name }}{% endblock %}
 
@@ -40,6 +39,7 @@
 
           <p>
           {% for tag in product.tags.all %}
+
             <a href="{% url 'games:home' %}?tag={{ tag.slug }}">
             <span class="badge badge-pill danger-color mr-2">
               {{ tag }}</a>
@@ -47,6 +47,7 @@
 
           {% endfor %}
           </p>
+
           {% if product.in_stock %}
 
             <p class="lead font-weight-bold">In stock</p>
@@ -57,13 +58,13 @@
 
           {% endif %}
 
-            <a href="{{ product.get_add_to_cart_url }}" 
-              class="btn btn-primary btn-big my-0 p">Add to cart
-              <i class="fas fa-shopping-cart ml-1"></i>
-            </a>
-            <a href="{{ product.get_remove_from_cart_url }}" 
-              class="btn btn-danger btn-big my-0 p">Remove from cart
-            </a>
+          <a href="{{ product.get_add_to_cart_url }}" 
+            class="btn btn-primary btn-big my-0 p">Add to cart
+            <i class="fas fa-shopping-cart ml-1"></i>
+          </a>
+          <a href="{{ product.get_remove_from_cart_url }}" 
+            class="btn btn-danger btn-big my-0 p">Remove from cart
+          </a>
 
         </div>
       </div>
@@ -80,14 +81,12 @@
 
       {% cache 3600 suggested_products product.name %}
       {% for product in suggested_products %}
-
-      <div class="col-lg-4 col-md-12 mb-4">
-        <a href="{{ product.get_absolute_url }}">
-          <img src="{{ product.images.first.thumbnail.url }}" class="img-fluid" alt="">
-          <p class="white-text"></p>
-        </a>
-      </div>
-
+        <div class="col-lg-4 col-md-12 mb-4">
+          <a href="{{ product.get_absolute_url }}">
+            <img src="{{ product.images.all.0.thumbnail.url }}" class="img-fluid" alt="">
+            <p class="white-text"></p>
+          </a>
+        </div>
       {% endfor %}
       {% endcache %}
 

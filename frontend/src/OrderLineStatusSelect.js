@@ -21,19 +21,32 @@ export default function OrderLineStatusSelect(props) {
   const classes = useStyles();
   const [data, setData] = useContext(OrderContext);
 
-  const updateOrderLine = (e, id) => {
-    const URL = `${orderLineUpdateURL}${id}`;
+  const updateOrderLine = async (e, id) => {
+    const url = `${orderLineUpdateURL}${id}`;
     const csrftoken = Cookies.get('csrftoken');
-    const response = fetch(URL, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': csrftoken
-      },
-      body: JSON.stringify({"status": e.target.value})
-    });
+    try {
+      const response = await fetch(
+        url, {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+          },
+          body: JSON.stringify({"status": e.target.value})
+        }
+      )
 
-    return response;
+      if (!response.ok) {
+        throw new Error(
+          `${response.status} ${response.statusText}`
+        );
+      }
+
+      return await response.json();
+
+    } catch (e) {
+      console.log(e);
+    }
   }
 
   return (
@@ -58,6 +71,7 @@ export default function OrderLineStatusSelect(props) {
                   })
               }
             })
+            .catch(console.log(e))
           }}
           autoWidth
           style={{ fontSize: 14 }}

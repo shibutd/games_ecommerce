@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import "@babel/polyfill";
 import Dashboard from './Dashboard';
 import { DashboardContextProvider } from './context';
 

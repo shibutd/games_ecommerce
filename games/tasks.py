@@ -7,8 +7,12 @@ from django.utils import timezone
 from django.db.models import Subquery
 from django.contrib.auth import get_user_model
 from .models import Order, Cart
+from .recommender import Recommender
 
 logger = logging.getLogger(__name__).setLevel("INFO")
+
+
+r = Recommender()
 
 
 @task
@@ -18,6 +22,10 @@ def order_created(order_id):
     successfully created.
     """
     order = Order.objects.get(pk=order_id)
+    products = [line.product for line in order.lines.all()]
+
+    r.products_bought(products)
+
     subject = 'Order nr. {}'.format(order.pk)
     message = 'You have successfully placed an order.\n \
         + Your order ID is {}'.format(order.pk)

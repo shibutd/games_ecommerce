@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useCallback } from 'react';
 import Box from '@material-ui/core/Box';
 import Grid from '@material-ui/core/Grid';
 import CircularProgress from '@material-ui/core/CircularProgress';
@@ -22,24 +22,16 @@ export default function Dashboard() {
   const [toDate, setToDate] = useState(null);
   const [searchInput, setSearchInput] = useState('');
 
-  const fetchAPI = () => {
+  const getUrl = useCallback(() => {
     const actPage = page + 1;
     const actStatus = (status || '');
     const actFromDate = (fromDate || '');
     const actToDate = (toDate || '');
 
-    const URL = `${orderListURL}?page=${actPage}&page_size=${rowsPerPage}\
+    return `${orderListURL}?page=${actPage}&page_size=${rowsPerPage}\
 &status=${actStatus}&from_date=${actFromDate}&to_date=${actToDate}\
 &search=${searchInput}&ordering=-date_added`;
-    
-    const response = fetch(URL)
-      .then(response => {
-        return response.json();
-      })
-      .catch(error => console.warn(error));
-    
-    return response;
-  }
+  }, [page, rowsPerPage, status, fromDate, toDate, searchInput]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -47,14 +39,12 @@ export default function Dashboard() {
 
   const handleChangeRowsPerPage = (event) => {
     const rowsPerPageValue = parseInt(event.target.value, 10);
-
     setPage(0);
     setRowsPerPage(rowsPerPageValue);
   }
 
   const handleChangeStatus = (event) => {
     const statusValue = event.target.value;
-
     setPage(0);
     setStatus(statusValue);
   }
@@ -80,20 +70,43 @@ export default function Dashboard() {
 
   const handleSearch = (event) => {
     const input = event.target.value;
-
     setPage(0);
     setSearchInput(input);
   }
 
   useEffect(() => {
-    // console.log('Data useEffect called!')
-    // setLoading(true);
-    fetchAPI()
-      .then(resp => {
+    const abortController = new AbortController();
+
+    const fetchData = async (url) => {
+
+      try {
+        const response = await fetch(
+          url,
+          { signal: abortController.signal }
+        )
+
+        if (!response.ok) {
+          throw new Error(
+            `${response.status} ${response.statusText}`
+          );
+        }
+
+        const resp = await response.json();
+
         setData(resp);
         setLoading(false);
-      })
-  }, [page, rowsPerPage, status, fromDate, toDate, searchInput]);
+
+      } catch (e) {
+        console.log(e);
+      }
+    };
+
+    fetchData(getUrl());
+
+    return () => {
+      abortController.abort();
+    }
+  }, [getUrl]);
 
   return (
     <TableContainer component={Paper}>
