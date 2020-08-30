@@ -188,32 +188,30 @@ class Cart(models.Model):
         return products
 
     def create_order(self, shipping_address, billing_address):
-        order = Order.objects.filter(
-            user=self.user, status=Order.NEW).first()
-        if order:
-            order.shipping_address = shipping_address
-            order.billing_address = billing_address
-            order.save()
-        else:
-            order_data = {
-                'user': self.user,
-                'shipping_address': shipping_address,
-                'billing_address': billing_address,
-            }
-            order = Order.objects.create(**order_data)
-
+        defaults = {
+            'shipping_address': shipping_address,
+            'billing_address': billing_address
+        }
+        order, created = Order.objects.update_or_create(
+            user=self.user,
+            status=Order.NEW,
+            defaults=defaults
+        )
         return order
 
     def submit(self):
         order = Order.objects.filter(
             user=self.user, status=Order.NEW).first()
+        orderlines = []
         for line in self.lines.select_related('product'):
-            order_line_data = {
-                'order': order,
-                'product': line.product,
-                'quantity': line.quantity,
-            }
-            OrderLine.objects.create(**order_line_data)
+            orderlines.append(
+                OrderLine(
+                    order=order,
+                    product=line.product,
+                    quantity=line.quantity
+                )
+            )
+        OrderLine.objects.bulk_create(orderlines)
 
         return order
 
