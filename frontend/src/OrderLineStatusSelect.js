@@ -21,8 +21,8 @@ export default function OrderLineStatusSelect(props) {
   const classes = useStyles();
   const [data, setData] = useContext(OrderContext);
 
-  const updateOrderLine = async (e, id) => {
-    const url = `${orderLineUpdateURL}${id}`;
+  const updateOrderLine = async (e, orderlineId) => {
+    const url = `${orderLineUpdateURL}${orderlineId}`;
     const csrftoken = Cookies.get('csrftoken');
     try {
       const response = await fetch(
@@ -42,12 +42,35 @@ export default function OrderLineStatusSelect(props) {
         );
       }
 
-      return await response.json();
+      return await response;
 
     } catch (e) {
       console.log(e);
     }
   }
+
+  const updateOrder = async (orderId) => {
+    const url = `${orderListURL}${orderId}`;
+    try {
+      const response = await fetch(url)
+
+      if (!response.ok) {
+        throw new Error(
+          `${response.status} ${response.statusText}`
+        );
+      }
+
+      const orderData = await response.json();
+      const orders = data.results.map(
+        order => order.id == orderId ? orderData : order
+      );
+      setData({...data, results: orders});
+
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
 
   return (
     <div>
@@ -59,19 +82,11 @@ export default function OrderLineStatusSelect(props) {
           disabled={props.orderLineStatus === 20}
           onChange={(e) => {
             updateOrderLine(e, props.id)
-            .then(response => {
-              if (response.status === 200) {
-                fetch(`${orderListURL}${props.order_id}`)
-                  .then(response => response.json())
-                  .then(orderData => {
-                    const orders = data.results.map(
-                      order => order.id == props.order_id ? orderData : order
-                    );
-                    setData({...data, results: orders});
-                  })
-              }
-            })
-            .catch(console.log(e))
+              .then(resp => {
+                if (resp.ok) {
+                  updateOrder(props.order_id);
+                }
+              })
           }}
           autoWidth
           style={{ fontSize: 14 }}

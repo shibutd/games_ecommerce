@@ -128,7 +128,8 @@ def orders_per_day(request, period):
     """
     starting_day = timezone.now() - timedelta(period)
     order_data = (Order.objects.filter(
-        Q(status=Order.PAID) & Q(payment__date_paid__gt=starting_day))
+        (Q(status=Order.PAID) | Q(status=Order.DONE))
+        & Q(payment__date_paid__gt=starting_day))
         .annotate(day=TruncDay('payment__date_paid'))
         .values('day')
         .annotate(c=Count('id'))
@@ -146,9 +147,10 @@ def most_bought_products(request, period):
     Show products and its number of purchases in chosen period.
     """
     starting_day = timezone.now() - timedelta(period)
-    data = (OrderLine.objects.filter(
-        Q(order__status=Order.PAID) & Q(
-            order__date_added__gt=starting_day))
+    data = (
+        OrderLine.objects.filter(
+            (Q(order__status=Order.PAID) | Q(order__status=Order.DONE))
+            & Q(order__date_added__gt=starting_day))
         .values('product__name')
         .annotate(c=Count('id'))
     )

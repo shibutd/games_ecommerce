@@ -1,6 +1,4 @@
 from django.conf import settings
-from django.utils import timezone
-
 import factory
 import factory.fuzzy
 from . import models

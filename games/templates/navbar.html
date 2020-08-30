@@ -2,12 +2,14 @@
 
 {% with request.user as user %}
 
-<nav class="navbar fixed-top navbar-expand-lg navbar-light white scrolling-navbar">
+<nav class="navbar fixed-top navbar-expand-lg navbar-light mdb-color lighten-4 scrolling-navbar">
   <div class="container">
 
-    <a class="navbar-brand waves-effect" href="/">
-      <strong class="blue-text">Games4Everyone</strong>
-    </a>
+    <div class="pr-2">
+      <a href="/">
+        <img src="{{ MEDIA_URL }}/images/icon.png" alt="Games4Everyone" height="90">
+      </a>
+    </div>
 
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
       aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -39,7 +41,7 @@
 
           <div class="dropdown">
 
-            <button class="btn btn-primary btn-sm dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown"
+            <button class="btn btn-primary btn-sm dropdown-toggle nav-dropdown-button" type="button" id="dropdownMenu1" data-toggle="dropdown"
               aria-haspopup="true" aria-expanded="false">{{ user }}</button>
 
             <div class="dropdown-menu dropdown-primary">

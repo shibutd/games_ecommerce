@@ -14,7 +14,7 @@ module.exports = {
         path: path.resolve('../assets/bundles/')
     },
     plugins: [
-        new BundleTracker({ filename: './webpack-stats.json' })
+        new BundleTracker({ filename: './webpack-stats.json' }),
     ],
     module: {
         rules: [

@@ -1,0 +1,39 @@
+@import url(http://fonts.googleapis.com/css?family=Pacifico);
+@import url(http://fonts.googleapis.com/css?family=Roboto:400,300,500,700);
+@import url(http://fonts.googleapis.com/css?family=Bangers:400,300,700);
+
+html,
+body,
+.view {
+  height: 100%;
+}
+
+.page-footer {
+  background-color: #929FBA;
+}
+
+.nav-item {
+  font-family: "Pacifico", sans-serif !important;
+  font-size: 1.5rem !important;
+  padding-left: 10px;
+}
+
+.alert-message {
+  padding-top: 4rem;
+  margin-top: 3.25rem;
+}
+
+.nav-dropdown-button {
+  font-size: 0.75rem !important;
+}
+
+.product-name {
+  font-family: "Bangers", sans-serif !important;
+  font-size: 1.5rem !important;
+  font-weight: 300;
+}
+
+.price {
+  font-family: "Pacifico", sans-serif !important;
+  font-size: 2rem !important;
+}

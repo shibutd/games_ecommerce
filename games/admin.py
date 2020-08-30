@@ -1,14 +1,9 @@
 import logging
 import csv
-from datetime import datetime, timedelta
+from datetime import datetime
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 from django.utils.html import format_html
-from django.utils import timezone
-from django.template.response import TemplateResponse
-from django.db.models.functions import TruncDay
-from django.db.models import Count, Q
-from django.urls import path
 from django.http import HttpResponse
 from allauth.socialaccount.models import (SocialApp, SocialAccount,
                                           SocialToken)

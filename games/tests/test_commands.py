@@ -16,11 +16,11 @@ class TestImport(TestCase):
         call_command('import_data', *args, stdout=out)
 
         expected_out = ("Importing products\n"
-                        "Products processed=4 (created=4)\n"
-                        "Tags processed=22 (created=10)\n"
-                        "Images processed=4\n")
+                        "Products processed=15 (created=15)\n"
+                        "Tags processed=80 (created=15)\n"
+                        "Images processed=15\n")
 
         self.assertEqual(out.getvalue(), expected_out)
-        self.assertEqual(models.Product.objects.count(), 4)
-        self.assertEqual(models.ProductTag.objects.count(), 10)
-        self.assertEqual(models.ProductImage.objects.count(), 4)
+        self.assertEqual(models.Product.objects.count(), 15)
+        self.assertEqual(models.ProductTag.objects.count(), 15)
+        self.assertEqual(models.ProductImage.objects.count(), 15)

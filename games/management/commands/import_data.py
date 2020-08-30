@@ -1,9 +1,12 @@
 import os
 import csv
+from io import BytesIO
 from collections import Counter
+from django.core.files.base import ContentFile
 from django.core.files.images import ImageFile
 from django.core.management.base import BaseCommand
 from django.template.defaultfilters import slugify
+from PIL import Image
 from games import models
 
 
@@ -22,12 +25,25 @@ class Command(BaseCommand):
         parser.add_argument("csvfile", type=open)
         parser.add_argument("image_basedir", type=str)
 
+    def process_image(self, image_path):
+        """
+        Receives image's path, convert image to preset format.
+        """
+        size = (520, 720)
+
+        im = Image.open(image_path)
+        resized_img = im.resize(size)
+
+        imgByteArr = BytesIO()
+        resized_img.save(imgByteArr, format='PNG')
+
+        return ContentFile(imgByteArr.getvalue())
+
     def handle(self, *args, **options):
         self.stdout.write("Importing products")
         c = Counter()
 
         # read .csv file and create product for every line
-        # reader = csv.DictReader(options.pop("csvfile"), delimiter=';')
         reader = csv.DictReader(options.pop("csvfile"), delimiter=';')
 
         for row in reader:
@@ -51,14 +67,20 @@ class Command(BaseCommand):
                     c["tags_created"] += 1
 
             # processing image
-            with open(os.path.join(options["image_basedir"],
-                                   row["image_filename"],), "rb",) as f:
+            image_path = os.path.join(
+                options["image_basedir"], row["image_filename"])
+            try:
+                processed_image = self.process_image(image_path)
                 image = models.ProductImage(
                     product=product,
-                    image=ImageFile(f, name=row["image_filename"]),
+                    image=ImageFile(processed_image,
+                                    name=row["image_filename"]),
                 )
                 image.save()
                 c["images"] += 1
+            except FileNotFoundError:
+                self.stdout.write(
+                    "File not found: {}".format(image_path))
 
             product.save()
             c["products"] += 1

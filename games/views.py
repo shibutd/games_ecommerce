@@ -29,7 +29,7 @@ class HomePageView(ListView):
     """
     template_name = 'home.html'
     model = models.Product
-    paginate_by = 4
+    paginate_by = 8
     context_object_name = 'products'
 
     def get_queryset(self):
