@@ -107,6 +107,8 @@ class ContactUsView(FormView):
 
     def form_valid(self, form):
         form.send_mail()
+        messages.success(
+            self.request, 'Your message has been received. Thank you!')
         return super().form_valid(form)
 
 

@@ -7,13 +7,13 @@
 
 <main class="mt-2 pt-4">
   <div class="container dark-grey-text">
-    
+
     <div class="row wow fadeIn">
+
       <div class="col-md-6 mb-4">
-
-          <img src="{{ product.images.all.0.image.url }}" class="img-fluid" alt=""/>
-
+        <img src="{{ product.images.all.0.image.url }}" class="img-fluid" alt=""/>
       </div>
+
       <div class="col-md-6 mb-4">
         <div class="pb-4">
 
@@ -31,16 +31,17 @@
           </p>
 
           <p class="lead font-weight-bold">Description</p>
-            <p>{{ product.description|linebreaks }}</p>
+          <p>{{ product.description|linebreaks }}</p>
 
 
           <p class="lead font-weight-bold">
           {% for tag in product.tags.all %}
 
             <a href="{% url 'games:home' %}?tag={{ tag.slug }}">
-            <span class="badge badge-pill danger-color mr-2">
-              {{ tag }}</a>
-            </span>
+              <span class="badge badge-pill danger-color mr-2">
+                {{ tag }}
+              </span>
+            </a>
 
           {% endfor %}
           </p>
@@ -62,32 +63,32 @@
           <a href="{{ product.get_remove_from_cart_url }}" 
             class="btn btn-danger btn-big my-0 p">Remove from cart
           </a>
-
         </div>
       </div>
     </div>
 
     <hr>
 
-    <div class="row d-flex justify-content-center wow fadeIn">
-      <div class="col-md-6 text-center mb-4">
+    <div class="row mb-4 d-flex justify-content-center wow fadeIn">
+      <div class="col-md-6 text-center">
+
         <h4 class="my-4 h4">People who bought this also bought</h4>
+
       </div>
     </div>
-    <div class="row wow fadeIn">
 
+    <div class="d-flex justify-content-between">
       {% cache 3600 suggested_products product.name %}
       {% for product in suggested_products %}
-        <div class="col-lg-4 col-md-12 mb-4">
+        <div class="col-md-4 mb-4">
           <a href="{{ product.get_absolute_url }}">
             <img src="{{ product.images.all.0.thumbnail.url }}" class="img-fluid" alt="">
-            <p class="white-text"></p>
           </a>
         </div>
       {% endfor %}
       {% endcache %}
-
     </div>
+
   </div>
 </main>
 

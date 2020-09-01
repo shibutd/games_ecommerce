@@ -25,12 +25,12 @@
         </li>
 
         <li class="nav-item {% if request.path == "/about-us/" %}active{% endif %}">
-          <a class="nav-link waves-effect" href="{% url "games:about-us" %}">About Us
+          <a class="nav-link waves-effect" href="{% url "games:about-us" %}">About&nbsp;Us
           </a>
         </li>
 
         <li class="nav-item {% if request.path == "/contact-us/" %}active{% endif %}">
-          <a class="nav-link waves-effect" href="{% url "games:contact-us" %}">Contact Us
+          <a class="nav-link waves-effect" href="{% url "games:contact-us" %}">Contact&nbsp;Us
           </a>
         </li>
       </ul>
@@ -59,19 +59,18 @@
 
         {% else %}
 
+        <ul class="navbar-nav mr-auto">
           <li class="nav-item">
-            <a href="{% url "account_login" %}" class="nav-link waves-effect">Log in</a>
+            <a href="{% url "account_login" %}" class="nav-link waves-effect">Log&nbsp;in</a>
           </li>
 
           <li class="nav-item">
-            <a href="{% url "account_signup" %}" class="nav-link waves-effect">Sign up</a>
+            <a href="{% url "account_signup" %}" class="nav-link waves-effect">Sign&nbsp;up</a>
           </li>
-
         {% endif %}
 
           <li class="nav-item">
             <a href="{% url 'games:order-summary' %}" class="nav-link waves-effect">
-
               {% with request|cart_item_count as cart_count %}
                   
                 {% if cart_count %}
@@ -81,9 +80,9 @@
                 <span class="clearfix d-none d-sm-inline-block"> Cart </span>
 
               {% endwith %}
-              
             </a>
           </li>
+        </ul>
 
 
       </ul>

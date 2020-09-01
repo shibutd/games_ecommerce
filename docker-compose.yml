@@ -2,7 +2,9 @@ version: '3'
 
 services:
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     command: python /code/manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/code
@@ -22,11 +24,15 @@ services:
       - redis
 
   db:
-    image: postgres:12
+    build:
+      context: .
+      dockerfile: pg-Dockerfile
+    restart: always
+    ports:
+      - 5432:5432
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     environment:
-      - DEBUG=1
       - REDIS_HOST=redis
       - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
@@ -34,15 +40,13 @@ services:
       - POSTGRES_HOST=db
       - CELERY_BROKER=redis://redis:6379/0
       - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
-
   
   redis:
     image: "redis:alpine"
     container_name: 'games_app_redis'
     ports:
-      - "6379:6379"
+      - 6379:6379
     environment:
-      - DEBUG=1
       - REDIS_HOST=redis
       - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
@@ -57,7 +61,6 @@ services:
     volumes:
       - .:/code
     environment:
-      - DEBUG=1
       - REDIS_HOST=redis
       - POSTGRES_DB=postgres
       - POSTGRES_USER=postgres
@@ -69,24 +72,22 @@ services:
       - web
       - redis
 
-  # celery-beat:
-  #   build: .
-  #   command: celery -A games_ecommerce beat -l info
-  #   volumes:
-  #     - .:/code
-  #   environment:
-  #     - DEBUG=1
-  #     - REDIS_HOST=redis
-  #     - POSTGRES_DB=postgres
-  #     - POSTGRES_USER=postgres
-  #     - POSTGRES_PASSWORD=postgres
-  #     - POSTGRES_HOST=db
-  #     - CELERY_BROKER=redis://redis:6379/0
-  #     - CELERY_BACKEND=redis://redis:6379/0
-  #     - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
-  #   depends_on:
-  #     - web
-  #     - redis
+  celery-beat:
+    build: .
+    command: celery -A games_ecommerce beat -l info
+    volumes:
+      - .:/code
+    environment:
+      - REDIS_HOST=redis
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_HOST=db
+      - CELERY_BROKER=redis://redis:6379/0
+      - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
+    depends_on:
+      - web
+      - redis
 
 volumes:
   postgres_data:

@@ -153,6 +153,7 @@ def most_bought_products(request, period):
             & Q(order__date_added__gt=starting_day))
         .values('product__name')
         .annotate(c=Count('id'))
+        .order_by('-c')[:6]
     )
     content = [{'product_name': x['product__name'], 'purchase_num': x['c']}
                for x in data]
@@ -182,12 +183,14 @@ def add_to_cart(request, slug):
     if not created:
         cartline.quantity += 1
         cartline.save()
-    content = {'id': cartline.pk,
-               'product_name': product.name,
-               'product_slug': product.slug,
-               'price': product.price,
-               'discount_price': product.discount_price,
-               'quantity': cartline.quantity}
+    content = {
+        'id': cartline.pk,
+        'product_name': product.name,
+        'product_slug': product.slug,
+        'price': product.price,
+        'discount_price': product.discount_price,
+        'quantity': cartline.quantity
+    }
     return Response(content, status=status.HTTP_200_OK)
 
 
@@ -227,8 +230,10 @@ def remove_single_from_cart(request, slug, cartline, product):
     if cartline.quantity > 1:
         cartline.quantity -= 1
         cartline.save()
-    content = {'product_name': product.name,
-               'quantity': cartline.quantity}
+    content = {
+        'product_name': product.name,
+        'quantity': cartline.quantity
+    }
     return Response(content, status=status.HTTP_200_OK)
 
 

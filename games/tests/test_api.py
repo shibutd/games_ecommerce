@@ -6,7 +6,8 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from games import factories, models
 from games.api.views import (
-    OrderList, OrderDetail, OrderLinePartialUpdate, IsUserStaff)
+    OrderList, OrderDetail, OrderLinePartialUpdate, IsUserStaff,
+    CartList)
 
 
 class TestOrder(APITestCase):
@@ -97,6 +98,34 @@ class TestIsUserStaff(APITestCase):
         get_response = self.client.get(url, format='json')
         self.assertEqual(get_response.status_code, status.HTTP_200_OK)
         self.assertFalse(get_response.data['is_staff'])
+
+
+class TestCart(APITestCase):
+
+    def setUp(self):
+        self.user1, self.user2 = factories.UserFactory.create_batch(2)
+
+        self.cart1 = factories.CartFactory.create(user=self.user1)
+        self.cart2 = factories.CartFactory.create(user=self.user2)
+
+    def test_retrieve_cart_list(self):
+        url = reverse('games:{}'.format(CartList.name))
+
+        self.client.force_login(self.user1)
+        get_response = self.client.get(url, format='json')
+        self.assertEqual(get_response.status_code, status.HTTP_200_OK)
+        cart1 = get_response.data[0]
+        self.assertEqual(len(get_response.data), 1)
+        self.assertEqual(cart1['id'], self.cart1.id)
+
+        self.client.logout()
+
+        self.client.force_login(self.user2)
+        get_response = self.client.get(url, format='json')
+        self.assertEqual(get_response.status_code, status.HTTP_200_OK)
+        cart2 = get_response.data[0]
+        self.assertEqual(len(get_response.data), 1)
+        self.assertEqual(cart2['id'], self.cart2.id)
 
 
 class TestOrdersPerDay(APITestCase):
@@ -196,3 +225,134 @@ class TestMostBoughtProducts(APITestCase):
              {'product_name': p3.name, 'purchase_num': 2},
              {'product_name': p1.name, 'purchase_num': 6}]
         )
+
+
+class TestCartManipulation(APITestCase):
+
+    def setUp(self):
+        self.user = factories.UserFactory.create()
+        self.product1, self.product2 = factories.ProductFactory.create_batch(2)
+        self.cart = factories.CartFactory.create(user=self.user)
+
+    def test_add_to_cart_create_cart(self):
+        models.Cart.objects.all().delete()
+
+        post_response = self.client.post(
+            reverse('games:api-add-to-cart',
+                    kwargs={'slug': self.product1.slug}),
+            format='json'
+        )
+        self.assertEqual(post_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(models.Cart.objects.count(), 1)
+
+    def test_add_to_cart_valid_product(self):
+        self.assertEqual(self.cart.count(), 0)
+
+        self.client.force_login(self.user)
+        post_response = self.client.post(
+            reverse('games:api-add-to-cart',
+                    kwargs={'slug': self.product1.slug}),
+            format='json'
+        )
+        self.assertEqual(post_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.cart.count(), 1)
+
+        post_response = self.client.post(
+            reverse('games:api-add-to-cart',
+                    kwargs={'slug': self.product1.slug}),
+            format='json'
+        )
+        self.assertEqual(post_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.cart.count(), 2)
+
+    def test_add_to_cart_invalid_product(self):
+        post_response = self.client.post(
+            reverse('games:api-add-to-cart',
+                    kwargs={'slug': 'invalid_slug'}),
+            format='json'
+        )
+        self.assertEqual(post_response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_remove_no_cart(self):
+        models.Cart.objects.all().delete()
+
+        self.client.force_login(self.user)
+        post_response = self.client.post(
+            reverse('games:api-remove-from-cart',
+                    kwargs={'slug': self.product1.slug}),
+            format='json'
+        )
+        self.assertEqual(post_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertCountEqual(
+            post_response.data,
+            {'error': 'You have no active cart.'}
+        )
+
+    def test_remove_cartline_is_not_valid(self):
+        factories.CartLineFactory.create(
+            cart=self.cart, product=self.product1)
+
+        self.client.force_login(self.user)
+        post_response = self.client.post(
+            reverse('games:api-remove-from-cart',
+                    kwargs={'slug': self.product2.slug}),
+            format='json'
+        )
+        self.assertEqual(post_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertCountEqual(
+            post_response.data,
+            {'error': 'This item is not in your cart.'}
+        )
+
+    def test_remove_single_from_cart(self):
+        factories.CartLineFactory.create(
+            cart=self.cart, product=self.product1, quantity=3)
+        factories.CartLineFactory.create(
+            cart=self.cart, product=self.product2, quantity=1)
+
+        self.client.force_login(self.user)
+        post_response = self.client.post(
+            reverse('games:api-remove-single-from-cart',
+                    kwargs={'slug': self.product1.slug}),
+            format='json'
+        )
+        self.assertEqual(post_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            post_response.data,
+            {'product_name': self.product1.name, 'quantity': 2}
+        )
+        cartline1 = models.CartLine.objects.get(
+            cart=self.cart, product=self.product1)
+        self.assertEqual(cartline1.quantity, 2)
+
+        post_response = self.client.post(
+            reverse('games:api-remove-single-from-cart',
+                    kwargs={'slug': self.product2.slug}),
+            format='json'
+        )
+        self.assertEqual(post_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            post_response.data,
+            {'product_name': self.product2.name, 'quantity': 1}
+        )
+        cartline2 = models.CartLine.objects.get(
+            cart=self.cart, product=self.product2)
+        self.assertEqual(cartline2.quantity, 1)
+
+    def test_remove_from_cart(self):
+        factories.CartLineFactory.create(
+            cart=self.cart, product=self.product1, quantity=2)
+
+        self.client.force_login(self.user)
+        post_response = self.client.post(
+            reverse('games:api-remove-from-cart',
+                    kwargs={'slug': self.product1.slug}),
+            format='json'
+        )
+        self.assertEqual(post_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            post_response.data,
+            {'product_name': self.product1.name}
+        )
+        self.assertEqual(
+            models.CartLine.objects.filter(cart=self.cart).count(), 0)

@@ -11,14 +11,14 @@ class UserFactory(factory.django.DjangoModelFactory):
         django_get_or_create = ('email',)
 
     email = factory.Sequence(lambda n: 'testuser{}@example.com'.format(n))
-
+    password = factory.Sequence(lambda n: 'password{}'.format(n))
 
 class ProductFactory(factory.django.DjangoModelFactory):
 
     class Meta:
         model = models.Product
 
-    name = factory.Sequence(lambda n: 'product {}'.format(n))
+    name = factory.Sequence(lambda n: 'Product {}'.format(n))
     slug = factory.Sequence(lambda n: 'product-{}'.format(n))
     price = factory.fuzzy.FuzzyDecimal(10.0, 100.0, 2)
 
@@ -66,3 +66,21 @@ class OrderFactory(factory.django.DjangoModelFactory):
 
     user = factory.SubFactory(UserFactory)
     payment = factory.SubFactory(PaymentFactory)
+
+
+class CartFactory(factory.django.DjangoModelFactory):
+
+    class Meta:
+        model = models.Cart
+
+    user = factory.SubFactory(UserFactory)
+    coupon = None
+
+
+class CartLineFactory(factory.django.DjangoModelFactory):
+
+    class Meta:
+        model = models.CartLine
+
+    cart = factory.SubFactory(CartFactory)
+    product = factory.SubFactory(ProductFactory)

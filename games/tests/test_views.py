@@ -162,6 +162,27 @@ class TestAddToCart(TestCase):
         self.assertEquals(models.CartLine.objects.filter(
             cart=cart, product=self.product1)[0].quantity, 3)
 
+    def test_anonymous_cart_becomes_main(self):
+        # user is not authenticated
+        self.assertFalse(auth.get_user(self.client).is_authenticated)
+
+        # user adds products to cart
+        self.client.get(self.product1.get_add_to_cart_url())
+        self.client.get(self.product2.get_add_to_cart_url())
+
+        # there is only one cart that is anonymous
+        self.assertEquals(models.Cart.objects.count(), 1)
+        self.assertFalse(models.Cart.objects.filter(
+            user=self.user).exists())
+        anonymous_cart = models.Cart.objects.all().first()
+        anonymous_cart_id = anonymous_cart.id
+
+        # user logged in
+        self.client.force_login(self.user)
+        self.assertEquals(models.Cart.objects.count(), 1)
+        self.assertEquals(models.Cart.objects.get(
+            user=self.user).id, anonymous_cart_id)
+
 
 class TestRemoveFromCart(TestCase):
 
@@ -272,9 +293,6 @@ class TestCheckoutView(TestCase):
         cls.use_default_form_data['billing-use_default'] = True
 
     def setUp(self):
-        # self.user = factories.UserFactory.create()
-        # self.product = factories.ProductFactory.create()
-
         self.client.force_login(self.user)
         self.client.get(self.product.get_add_to_cart_url())
         self.response = self.client.post(
@@ -324,6 +342,46 @@ class TestCheckoutView(TestCase):
             reverse('games:checkout'), self.use_default_form_data)
         self.assertEqual(response.status_code, 302)
         self.assertRedirects(response, reverse("games:checkout"))
+
+
+class TestCouponView(TestCase):
+
+    def setUp(self):
+        self.user = factories.UserFactory.create()
+        product = factories.ProductFactory.create()
+
+        self.client.force_login(self.user)
+        self.client.get(product.get_add_to_cart_url())
+
+        self.coupon = models.Coupon.objects.create(
+            code='MINUS5', amount=5)
+
+        cart = models.Cart.objects.get(user=self.user)
+        self.cost_before_coupon = cart.get_total()
+
+    def test_enter_valid_coupon(self):
+        post_data = {'coupon-code': 'MINUS5'}
+
+        response = self.client.post(reverse('games:add-coupon'), post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("games:checkout"))
+
+        cart = models.Cart.objects.get(user=self.user)
+        self.assertEquals(cart.coupon, self.coupon)
+        self.assertEquals(
+            cart.get_total(),
+            self.cost_before_coupon - self.coupon.amount
+        )
+
+    def test_enter_invalid_coupon(self):
+        post_data = {'coupon-code': 'INVALID_CODE'}
+
+        response = self.client.post(reverse('games:add-coupon'), post_data)
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("games:checkout"))
+
+        cart = models.Cart.objects.get(user=self.user)
+        self.assertEquals(cart.coupon, None)
 
 
 class TestPaymentView(TestCase):
@@ -400,3 +458,51 @@ class TestSearchView(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'search.html')
         self.assertContains(response, self.product.name)
+
+
+class TestIsStaffMixin(TestCase):
+
+    def test_is_staff_mixin(self):
+        user1, user2 = factories.UserFactory.create_batch(2)
+        user2.is_staff = True
+        user2.save()
+
+        # unauthenticated user redirects
+        response = self.client.get(reverse('games:orders-per-day'))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("games:home"))
+
+        # not staff user redirects
+        self.client.force_login(user1)
+        response = self.client.get(reverse('games:orders-per-day'))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("games:home"))
+
+        # staff user has access
+        self.client.force_login(user2)
+        response = self.client.get(reverse('games:orders-per-day'))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'orders_per_day.html')
+
+
+class TestLoggedOpenCartExistsMixin(TestCase):
+
+    def test_not_logged_redirects(self):
+        user = factories.UserFactory.create()
+
+        # unauthenticated user redirects
+        response = self.client.get(reverse('games:checkout'))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(
+            response,
+            '{0}?next=/{1}'.format(
+                reverse("account_login"),
+                'checkout/'
+            )
+        )
+
+        # without cart user redirects
+        self.client.force_login(user)
+        response = self.client.get(reverse('games:checkout'))
+        self.assertEqual(response.status_code, 302)
+        self.assertRedirects(response, reverse("games:home"))

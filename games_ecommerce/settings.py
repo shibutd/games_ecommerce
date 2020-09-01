@@ -22,14 +22,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '3^s*%x^f@0f$pr(n1kc3_(s9+)$76h%_xe8_7m$$c5%y*uy+8h'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = int(os.environ.get('DEBUG', default=0))
 
-# ALLOWED_HOSTS = ['127.0.0.1']
-# ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS")
-# if ALLOWED_HOSTS:
-#     ALLOWED_HOSTS = ALLOWED_HOSTS.split(" ")
-# else:
-#     ALLOWED_HOSTS = ['127.0.0.1']
 ALLOWED_HOSTS = (os.environ.get("DJANGO_ALLOWED_HOSTS").split(" ") if
                  os.environ.get("DJANGO_ALLOWED_HOSTS") else ['127.0.0.1'])
 
@@ -99,26 +93,12 @@ WSGI_APPLICATION = 'games_ecommerce.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-#     }
-# }
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        # 'NAME': 'postgres',
-        # 'NAME': 'games_ecommerce',
         'NAME': os.environ.get('POSTGRES_DB', 'games_ecommerce'),
-        # 'USER': 'postgres',
         'USER': os.environ.get('POSTGRES_USER', 'postgres'),
-        # 'PASSWORD': 'aMhKuJqhbzLrRe93ypCB',
-        # 'PASSWORD': 'postgres',
         'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'aMhKuJqhbzLrRe93ypCB'),
-        # 'HOST': '127.0.0.1',
-        # 'HOST': 'db',
         'HOST': os.environ.get('POSTGRES_HOST', '127.0.0.1'),
         'PORT': 5432
     }
@@ -181,7 +161,6 @@ MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 # REDIS
 
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
-# REDIS_HOST = 'redis'
 REDIS_PORT = 6379
 REDIS_DB = 1
 
@@ -196,10 +175,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        # 'LOCATION': 'redis://127.0.0.1:6379/',
         'LOCATION': 'redis://{}:6379/'.format(REDIS_HOST),
 
-        # 'LOCATION': 'redis://redis:6379/',
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         }
@@ -264,12 +241,6 @@ COUNTRIES_ONLY = ['GB', 'US']
 
 
 # CELERY
-
-# CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
-# CELERY_BROKER_TRANSPORT = 'redis'
-
-# CELERY_BROKER_URL = "redis://redis:6379"
-# CELERY_RESULT_BACKEND = "redis://redis:6379"
 
 CELERY_BROKER_URL = os.getenv('CELERY_BROKER', 'redis://127.0.0.1:6379/0')
 CELERY_RESULT_BACKEND = os.getenv('CELERY_BROKER', 'redis://127.0.0.1:6379/0')
