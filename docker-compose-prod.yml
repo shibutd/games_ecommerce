@@ -5,7 +5,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: python /code/manage.py runserver 0.0.0.0:8000
+    # command: python /code/manage.py runserver 0.0.0.0:8000
+    command: gunicorn games_ecommerce.wsgi -b 0.0.0.0:8000
     volumes:
       - .:/code
     ports:
@@ -29,9 +30,10 @@ services:
     env_file:
       - .env
     container_name: 'games_app_db'
-
+  
   redis:
     image: "redis:alpine"
+    container_name: 'games_app_redis'
     ports:
       - 6379:6379
     env_file:
@@ -40,7 +42,7 @@ services:
 
   celery:
     build: .
-    command: celery -A games_ecommerce worker -l info
+    command: celery -A games_ecommerce worker -l info --uid=nobody --gid=nogroup
     volumes:
       - .:/code
     env_file:
