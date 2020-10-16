@@ -14,7 +14,7 @@ app.autodiscover_tasks()
 
 
 app.conf.beat_schedule = {
-    'run-every-30-seconds': {
+    'delete_unactive_carts': {
         'task': 'games.tasks.delete_unactive_carts',
         'schedule': crontab(hour=4, day_of_week='2, 5'),
         'args': (),

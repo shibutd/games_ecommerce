@@ -17,6 +17,8 @@ django-webpack-loader = "*"
 djangorestframework = "*"
 django-filter = "*"
 django-braces = "*"
+python-dotenv = "*"
+django-cors-headers = "*"
 
 [dev-packages]
 django-extensions = "*"
