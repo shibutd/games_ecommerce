@@ -38,15 +38,11 @@ jobs:
 
       - name: Run migrations
         env:
-          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: games_ecommerce
         run: python manage.py migrate
 
       - name: Run the tests
         env:
-          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: games_ecommerce
         run: |
           python manage.py test
