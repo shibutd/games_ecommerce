@@ -7,7 +7,7 @@ export const orderSummaryURL = `${localhost}/order-summary/`;
 
 export const orderListURL = `${apiURL}/orders/`;
 
-export const IsUserStaffURL = `${endpoint}/is-user-staff/`;
+export const IsUserStaffURL = `${apiURL}/is-user-staff/`;
 
 export const orderLineUpdateURL = `${endpoint}/order-lines/`;
 
