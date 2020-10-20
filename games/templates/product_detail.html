@@ -80,7 +80,7 @@
     <div class="d-flex justify-content-between">
       {% cache 3600 suggested_products product.name %}
       {% for product in suggested_products %}
-        <div class="col-md-4 mb-4">
+        <div class="d-flex justify-content-center col-md-4 mb-4">
           <a href="{{ product.get_absolute_url }}">
             <img src="{{ product.images.all.0.thumbnail.url }}" class="img-fluid" alt="">
           </a>

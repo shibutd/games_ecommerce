@@ -15,7 +15,6 @@ services:
     depends_on:
       - db
       - redis
-    entrypoint: ./scripts/entrypoint.sh
     container_name: 'games_app_web'
 
   db:

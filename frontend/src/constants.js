@@ -5,7 +5,7 @@ const endpoint = `${localhost}${apiURL}`;
 
 export const orderSummaryURL = `${localhost}/order-summary/`;
 
-export const orderListURL = `${endpoint}/orders/`;
+export const orderListURL = `${apiURL}/orders/`;
 
 export const IsUserStaffURL = `${endpoint}/is-user-staff/`;
 
