@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 import logging
 from datetime import timedelta
-from celery import task
+from celery import shared_task
 from django.core.mail import send_mail
 from django.utils import timezone
 from django.db.models import Subquery
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__).setLevel("INFO")
 r = Recommender()
 
 
-@task
+@shared_task
 def order_created(order_id):
     """
     Task to send an e-mail notification when an order is
@@ -38,7 +38,7 @@ def order_created(order_id):
     return mail_sent
 
 
-@task
+@shared_task
 def contact_us_form_filled(form_data):
     """
     Task to send an e-mail message to customer service when
@@ -58,7 +58,7 @@ def contact_us_form_filled(form_data):
     return mail_sent
 
 
-@task
+@shared_task
 def delete_unactive_carts():
     """
     Delete Carts if user was logged in more than 2 weeks ago.

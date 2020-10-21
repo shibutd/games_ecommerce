@@ -20,6 +20,7 @@ django-braces = "*"
 whitenoise = "*"
 gunicorn = "*"
 python-dotenv = "*"
+django-cors-headers = "*"
 
 [dev-packages]
 django-extensions = "*"

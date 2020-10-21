@@ -5,13 +5,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command: python /code/manage.py runserver 0.0.0.0:8000
+    restart: always
     volumes:
       - .:/code
     ports:
       - 8000:8000
     env_file:
-      - .env
+      - .env.prod
     depends_on:
       - db
       - redis
@@ -27,24 +27,25 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     env_file:
-      - .env
+      - .env.prod
     container_name: 'games_app_db'
 
   redis:
     image: "redis:alpine"
+    restart: always
     ports:
       - 6379:6379
     env_file:
-      - .env
+      - .env.prod
     container_name: 'games_app_redis'
 
   celery:
     build: .
-    command: celery -A games_ecommerce worker -l info
+    command: celery -A games_ecommerce worker -l INFO
     volumes:
       - .:/code
     env_file:
-      - .env
+      - .env.prod
     depends_on:
       - web
       - redis
@@ -52,11 +53,11 @@ services:
 
   celery-beat:
     build: .
-    command: celery -A games_ecommerce beat -l info
+    command: celery -A games_ecommerce beat -l INFO
     volumes:
       - .:/code
     env_file:
-      - .env
+      - .env.prod
     depends_on:
       - web
       - redis

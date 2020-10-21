@@ -15,11 +15,35 @@ export const DashboardContextProvider = props => {
   const [data, setData] = useState([]);
 
   useEffect(() => {
-    fetch(IsUserStaffURL)
-      .then(response => response.json())
-      .then(data => setIsUserStaff(data.is_staff))
-      .catch(error => console.warn(error));
-  }, [])
+    const abortController = new AbortController();
+
+    const fetchData = async () => {
+      try {
+        const response = await fetch(
+          IsUserStaffURL,
+          { signal: abortController.signal }
+        )
+
+        if (!response.ok) {
+          throw new Error(
+            `${response.status} ${response.statusText}`
+          );
+        }
+
+        const data = await response.json();
+        setIsUserStaff(data.is_staff);
+
+      } catch (e) {
+        console.log(e);
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      abortController.abort();
+    }
+  }, []);
 
   return (
     <UserContext.Provider value={isUserStaff}>
