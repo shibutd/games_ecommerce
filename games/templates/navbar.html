@@ -7,7 +7,7 @@
 
     <div class="pr-2">
       <a href="/">
-        <img src="{{ MEDIA_URL }}/images/icon.png" alt="Games4Everyone" height="90">
+        <img src="{{ MEDIA_URL }}images/icon.png" alt="Games4Everyone" height="90">
       </a>
     </div>
 
@@ -36,7 +36,7 @@
       </ul>
 
       <ul class="navbar-nav nav-flex-icons">
-        
+
         {% if user.is_authenticated %}
 
           <div class="dropdown">
@@ -72,7 +72,7 @@
           <li class="nav-item">
             <a href="{% url 'games:order-summary' %}" class="nav-link waves-effect">
               {% with request|cart_item_count as cart_count %}
-                  
+
                 {% if cart_count %}
                   <span class="badge red z-depth-1 mr-1"> {{ cart_count }} </span>
                 {% endif %}

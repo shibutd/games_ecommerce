@@ -4,4 +4,4 @@ python manage.py migrate
 
 python manage.py collectstatic --noinput
 
-gunicorn games_ecommerce.wsgi -b 0.0.0.0:8000
+gunicorn games_ecommerce.wsgi:application -b 0.0.0.0:8000

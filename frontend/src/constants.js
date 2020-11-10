@@ -3,22 +3,22 @@ const apiURL = '/api';
 
 const endpoint = `${localhost}${apiURL}`;
 
-export const orderSummaryURL = `${localhost}/order-summary/`;
+export const orderSummaryURL = `/order-summary/`;
 
 export const orderListURL = `${apiURL}/orders/`;
 
 export const IsUserStaffURL = `${apiURL}/is-user-staff/`;
 
-export const orderLineUpdateURL = `${endpoint}/order-lines/`;
+export const orderLineUpdateURL = `${apiURL}/order-lines/`;
 
-export const cartListURL = `${endpoint}/carts/`;
+export const cartListURL = `${apiURL}/carts/`;
 
 export const ordersPerDayURL = `${apiURL}/orders-per-day/`;
 
 export const mostBoughtProductsURL = `${apiURL}/most-bought-products/`;
 
-export const addToCartURL = `${endpoint}/add-to-cart/`;
+export const addToCartURL = `${apiURL}/add-to-cart/`;
 
-export const removeSingleFromCartURL = `${endpoint}/remove-single-from-cart/`;
+export const removeSingleFromCartURL = `${apiURL}/remove-single-from-cart/`;
 
-export const removeFromCartURL = `${endpoint}/remove-from-cart/`;
+export const removeFromCartURL = `${apiURL}/remove-from-cart/`;
