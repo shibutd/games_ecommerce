@@ -21,6 +21,9 @@ whitenoise = "*"
 gunicorn = "*"
 python-dotenv = "*"
 django-cors-headers = "*"
+django-storages = "*"
+boto3 = "*"
+cryptography = ">=3.2"
 
 [dev-packages]
 django-extensions = "*"
