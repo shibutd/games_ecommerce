@@ -1,3 +1,7 @@
+Demo site: http://34.107.117.229:8000/
+
+<br />
+
 Create Ecommerce website preview:
 ```
 docker-compose up -d --build
